@@ -22,27 +22,42 @@ let VERSION = 'Zenbot 4 Genetic Backtester v0.2';
 
 let PARALLEL_LIMIT = (process.env.PARALLEL_LIMIT && +process.env.PARALLEL_LIMIT) || require('os').cpus().length;
 
-let TREND_EMA_MIN = 20;
-let TREND_EMA_MAX = 26;
+let TREND_EMA_MIN = 5;
+let TREND_EMA_MAX = 40;
 
 let OVERSOLD_RSI_MIN = 20;
 let OVERSOLD_RSI_MAX = 25;
 
-let OVERSOLD_RSI_PERIODS_MIN = 15;
-let OVERSOLD_RSI_PERIODS_MAX = 25;
+let OVERSOLD_RSI_PERIODS_MIN = 10;
+let OVERSOLD_RSI_PERIODS_MAX = 30;
 
-let NEUTRAL_RATE_MIN = 10;
-let NEUTRAL_RATE_MAX = 10;
+//let NEUTRAL_RATE_MIN = 10;
+//let NEUTRAL_RATE_MAX = 10;
 
-let NEUTRAL_RATE_AUTO = false;
+//let NEUTRAL_RATE_AUTO = false;
+
+// minimum period minutes
+let PERIOD_MIN = 10;
+let PERIOD_MAX = 60;
+
+let MIN_PERIODS_MIN = 2;
+let MIN_PERIODS_MAX = 40;
+
+let PROFIT_MAX_PCT = 30;
+let PROFIT_MIN_PCT = 15
+let PROFIT_STOP_LOSS_PCT_MAX = 5;
+let PROFIT_STOP_LOSS_PCT_MIN = 1;
+
+let BUY_STOP_PCT_MAX = 20;
+let BUY_STOP_PCT_MIN = 1;
+
+let SELL_STOP_PCT_MAX = 20;
+let SELL_STOP_PCT_MIN = 1;
 
 // These values limit the writing of a new config file to /strategies
-let MIN_ROI = 1;
+let MIN_ROI = 0.5;
 let MIN_WIN_LOSS_RATIO = 1;
 let MIN_VSBUYHOLD = -5;
-
-// some overriding sane values
-let MIN_MINUTES = 15;
 
 let iterationCount = 0;
 
@@ -232,6 +247,38 @@ let RangeNeuralActivation = () => {
 };
 
 let strategies = {
+  trend_ema: {
+    // -- common
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
+    markup_pct: RangeFloat(0, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
+    buy_stop_pct: Range(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
+    profit_stop_enable_pct: Range(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN, PROFIT_STOP_LOSS_PCT_MAX),
+
+    // -- strategy
+    trend_ema: Range(TREND_EMA_MIN, TREND_EMA_MAX),
+    oversold_rsi_periods: Range(OVERSOLD_RSI_PERIODS_MIN, OVERSOLD_RSI_PERIODS_MAX),
+    oversold_rsi: Range(OVERSOLD_RSI_MIN, OVERSOLD_RSI_MAX)
+  },
+  ta_ema: {
+    // -- common
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
+    markup_pct: RangeFloat(0, 1),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
+    buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
+
+    // -- strategy
+    trend_ema: Range(TREND_EMA_MIN, TREND_EMA_MAX),
+    oversold_rsi_periods: Range(OVERSOLD_RSI_PERIODS_MIN, OVERSOLD_RSI_PERIODS_MAX),
+    oversold_rsi: Range(OVERSOLD_RSI_MIN, OVERSOLD_RSI_MAX)
+  },
   crossover_vwap: {
     // -- common
     periodLength: RangePeriod(20, 200, 'm'),
@@ -252,7 +299,7 @@ let strategies = {
   },
   cci_srsi: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(1, 200),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
@@ -275,7 +322,7 @@ let strategies = {
   },
   srsi_macd: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(1, 200),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
@@ -299,7 +346,7 @@ let strategies = {
   },
   macd: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(1, 200),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
@@ -319,7 +366,7 @@ let strategies = {
   },
   neural: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(1, 200),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
@@ -338,7 +385,7 @@ let strategies = {
   },
   rsi: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(1, 200),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
@@ -357,7 +404,7 @@ let strategies = {
   },
   sar: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(2, 100),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
@@ -372,7 +419,7 @@ let strategies = {
   },
   speed: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(1, 100),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
@@ -385,25 +432,9 @@ let strategies = {
     baseline_periods: Range(1, 5000),
     trigger_factor: RangeFloat(0.1, 10)
   },
-  trend_ema: {
-    // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
-    min_periods: Range(1, 100),
-    markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 30),
-    buy_stop_pct: Range0(1, 30),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
-
-    // -- strategy
-    trend_ema: Range(TREND_EMA_MIN, TREND_EMA_MAX),
-    oversold_rsi_periods: Range(OVERSOLD_RSI_PERIODS_MIN, OVERSOLD_RSI_PERIODS_MAX),
-    oversold_rsi: Range(OVERSOLD_RSI_MIN, OVERSOLD_RSI_MAX)
-  },
   trust_distrust: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(1, 100),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
@@ -422,7 +453,7 @@ let strategies = {
   },
   ta_macd: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(1, 200),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
@@ -459,25 +490,9 @@ let strategies = {
     lastpoints2: Range(5, 300),
     avgpoints2: Range(50, 1000),
   },
-  ta_ema: {
-    // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 120, 'm'),
-    min_periods: Range(1, 100),
-    markup_pct: RangeFloat(0, 1),
-    order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 50),
-    buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
-
-    // -- strategy
-    trend_ema: Range(TREND_EMA_MIN, TREND_EMA_MAX),
-    oversold_rsi_periods: Range(OVERSOLD_RSI_PERIODS_MIN, OVERSOLD_RSI_PERIODS_MAX),
-    oversold_rsi: Range(OVERSOLD_RSI_MIN, OVERSOLD_RSI_MAX)
-  },
   trendline: {
     // -- common
-    periodLength: RangePeriod(MIN_MINUTES, 400, 'm'),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(1, 200),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
@@ -493,7 +508,7 @@ let strategies = {
     avgpoints: Range(300, 3000),
     lastpoints2: Range(5, 300),
     avgpoints2: Range(50, 1000),
-   },
+   }
 };
 
 let allStrategyNames = () => {
@@ -651,64 +666,14 @@ let simulateGeneration = () => {
     });
 
     let fileDate = Math.round(+new Date() / 1000);
-    let fileName = `simulations/backtesting_${argv.selector}_${fileDate}.csv`;
-    fs.writeFile(fileName, csv, err => {
-      if (err) throw err;
-    });
-
-    let csvFileName = `simulations/backtesting_${fileDate}.csv`;
+    let csvFileName = `simulations/backtesting_${argv.selector}_${fileDate}.csv`;
     
     let poolData = {};
     selectedStrategies.forEach(function(v) {
       poolData[v] = pools[v]['pool'].population();
     });
 
-    let poolFileName = `simulations/generation_data_${argv.selector}_${fileDate}_gen_${generationCount}.json`;
-    let poolDataJSON = JSON.stringify(poolData, null, 2);
-    fs.writeFile(poolFileName, poolDataJSON, err => {
-      if (err) throw err;
-    });
-
-    console.log(`\n\nGeneration's Best Results`);
-
-    selectedStrategies.forEach(function(v) {
-      let best = pools[v]['pool'].best();
-      console.log(`(${v}) VS Buy and Hold: ${best.sim.vsBuyHold} End Balance: ${best.sim.endBalance}`);
-
-      roi = best.sim.roi
-      wins = best.sim.wins
-      losses = best.sim.losses
-      vsBuyHold = best.sim.vsBuyHold
-
-
-      // basic safety net to prevent bad config file
-      if (roi > MIN_ROI && wins/losses >= MIN_WIN_LOSS_RATIO && vsBuyHold >= MIN_VSBUYHOLD) {
-        parameters = best.sim.params
-        selector = best.sim.selector.exchange_id + "." + best.sim.selector.product_id
-        strategy = best.sim.strategy
-
-        fs.writeFile("strategies/" + selector + "_" + strategy + ".conf", parameters, err => {
-         if (err) throw err;
-        });
-
-        fs.writeFile("strategies/" + selector + "_" + strategy + "_results.json", JSON.stringify(best), err => {
-         if (err) throw err;
-        });
-
-        fs.writeFile("strategies/" + selector + "_" + strategy + "_data.json", poolDataJSON, err => {
-         if (err) throw err;
-        });
-        console.log("Writing new config: " + "strategies/" + selector + "_" + strategy + ".conf")
-        console.log("\r\nResults: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
-      } else {
-        console.log("\r\nNot writing new config: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
-      }
-      let nextGen = pools[v]['pool'].evolve();
-    });
-
-    simulateGeneration();
-
-    let jsonFileName = `simulations/generation_data_${fileDate}_gen_${generationCount}.json`;
+    let jsonFileName = `simulations/generation_data_${argv.selector}_${fileDate}_gen_${generationCount}.json`;
     let dataJSON = JSON.stringify(poolData, null, 2);
     var filesSaved = 0;
     saveGenerationData(csvFileName, jsonFileName, dataCSV, dataJSON, (id)=>{
@@ -733,14 +698,45 @@ let simulateGeneration = () => {
           
           console.log(bestCommand + '\n');
             
+          exportStuff(best, dataJSON);
+
           let nextGen = pools[v]['pool'].evolve();
         });
         
         simulateGeneration();
       }
     });
- 
   });
 };
 
 simulateGeneration();
+
+function exportStuff(best, dataJSON) {
+  roi = best.sim.roi
+  wins = best.sim.wins
+  losses = best.sim.losses
+  vsBuyHold = best.sim.vsBuyHold
+
+  // basic safety net to prevent bad config file
+  if (roi > MIN_ROI && vsBuyHold >= MIN_VSBUYHOLD) {
+    parameters = best.sim.params
+    selector = best.sim.selector.exchange_id + "." + best.sim.selector.product_id
+    strategy = best.sim.strategy
+
+    fs.writeFile("strategies/" + selector + "_" + strategy + ".conf", parameters, err => {
+     if (err) throw err;
+    });
+
+    fs.writeFile("strategies/" + selector + "_" + strategy + "_results.json", JSON.stringify(best), err => {
+     if (err) throw err;
+    });
+
+    fs.writeFile("strategies/" + selector + "_" + strategy + "_data.json", dataJSON, err => {
+     if (err) throw err;
+    });
+    console.log("Writing new config: " + "strategies/" + selector + "_" + strategy + ".conf")
+    console.log("\r\nResults: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
+  } else {
+    console.log("\r\nNot writing new config: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
+  }
+}
