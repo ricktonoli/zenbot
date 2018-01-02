@@ -38,7 +38,7 @@ let OVERSOLD_RSI_PERIODS_MAX = 30;
 
 // minimum period minutes
 let PERIOD_MIN = 10;
-let PERIOD_MAX = 60;
+let PERIOD_MAX = 80;
 
 let MIN_PERIODS_MIN = 2;
 let MIN_PERIODS_MAX = 40;
@@ -64,7 +64,7 @@ let iterationCount = 0;
 let runCommand = (taskStrategyName, phenotype, cb) => {
   let commonArgs = `--strategy=${taskStrategyName} --periodLength=${phenotype.periodLength} --min_periods=${phenotype.min_periods} --markup_pct=${phenotype.markup_pct} --order_type=${phenotype.order_type} --sell_stop_pct=${phenotype.sell_stop_pct} --buy_stop_pct=${phenotype.buy_stop_pct} --profit_stop_enable_pct=${phenotype.profit_stop_enable_pct} --profit_stop_pct=${phenotype.profit_stop_pct}`;
   let strategyArgs = {
-    crossover_vwap: `--emalen1=${phenotype.emalen1}  --vwap_length=${phenotype.vwap_length} --vwap_max=${phenotype.vwap_max} --markdown_buy_pct=${phenotype.markdown_buy_pct} --markup_sell_pct=${phenotype.markup_sell_pct}`,
+    crossover_vwap: `--emalen1=${phenotype.emalen1}  --smalen1=${phenotype.smalen1}  --smalen2=${phenotype.smalen2}  --vwap_length=${phenotype.vwap_length} --vwap_max=${phenotype.vwap_max} --markdown_buy_pct=${phenotype.markdown_buy_pct} --markup_sell_pct=${phenotype.markup_sell_pct}`,
     trendline: `--lastpoints=${phenotype.lastpoints}  --avgpoints=${phenotype.avgpoints} --lastpoints2=${phenotype.lastpoints2} --avgpoints2=${phenotype.avgpoints2} --markdown_buy_pct=${phenotype.markdown_buy_pct} --markup_sell_pct=${phenotype.markup_sell_pct}`,
     cci_srsi: `--cci_periods=${phenotype.rsi_periods} --rsi_periods=${phenotype.srsi_periods} --srsi_periods=${phenotype.srsi_periods} --srsi_k=${phenotype.srsi_k} --srsi_d=${phenotype.srsi_d} --oversold_rsi=${phenotype.oversold_rsi} --overbought_rsi=${phenotype.overbought_rsi} --oversold_cci=${phenotype.oversold_cci} --overbought_cci=${phenotype.overbought_cci} --constant=${phenotype.constant}`,
     srsi_macd: `--rsi_periods=${phenotype.rsi_periods} --srsi_periods=${phenotype.srsi_periods} --srsi_k=${phenotype.srsi_k} --srsi_d=${phenotype.srsi_d} --oversold_rsi=${phenotype.oversold_rsi} --overbought_rsi=${phenotype.overbought_rsi} --ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --signal_period=${phenotype.signal_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold}`,
@@ -267,7 +267,7 @@ let strategies = {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
-    markup_pct: RangeFloat(0, 1),
+    markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
@@ -281,32 +281,34 @@ let strategies = {
   },
   crossover_vwap: {
     // -- common
-    periodLength: RangePeriod(20, 200, 'm'),
-    min_periods: Range(1, 200),
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     markup_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 50),
-    buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
+    buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
-    emalen1: Range(1, 300),
-    vwap_length: Range(1, 300),
+    emalen1: Range(10, 300),
+    smalen1: Range(10, 300),
+    smalen2: Range(10, 300),
+    vwap_length: Range(10, 300),
     vwap_max: RangeFactor(0, 10000, 10)//0 disables this max cap. Test in increments of 10
   },
   cci_srsi: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(1, 200),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
     cci_periods: Range(1, 200),
@@ -323,13 +325,13 @@ let strategies = {
   srsi_macd: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(1, 200),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
     rsi_periods: Range(1, 200),
@@ -347,17 +349,17 @@ let strategies = {
   macd: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(1, 200),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
     ema_short_period: Range(1, 20),
-    ema_long_period: Range(20, 100),
+    ema_long_period: Range(20, 80),
     signal_period: Range(1, 20),
     up_trend_threshold: Range(0, 50),
     down_trend_threshold: Range(0, 50),
@@ -367,13 +369,13 @@ let strategies = {
   neural: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(1, 200),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
     // -- strategy
     neurons_1: Range(1, 200),
     activation_1_type: RangeNeuralActivation(),
@@ -386,13 +388,13 @@ let strategies = {
   rsi: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(1, 200),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
     rsi_periods: Range(1, 200),
@@ -405,13 +407,13 @@ let strategies = {
   sar: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(2, 100),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
     sar_af: RangeFloat(0.01, 1.0),
@@ -420,13 +422,13 @@ let strategies = {
   speed: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(1, 100),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
     baseline_periods: Range(1, 5000),
@@ -435,13 +437,13 @@ let strategies = {
   trust_distrust: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(1, 100),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
     sell_threshold: Range(1, 100),
@@ -454,13 +456,13 @@ let strategies = {
   ta_macd: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(1, 200),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
     // have to be minimum 2 because talib will throw an "TA_BAD_PARAM" error
@@ -475,14 +477,14 @@ let strategies = {
   trendline: {
     // -- common
     periodLength: RangePeriod(1, 400, 'm'),
-    min_periods: Range(1, 200),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
     lastpoints: Range(20, 500),
@@ -493,15 +495,15 @@ let strategies = {
   trendline: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(1, 200),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     markup_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
      
     // -- strategy
     lastpoints: Range(20, 500),
