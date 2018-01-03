@@ -22,8 +22,8 @@ let VERSION = 'Zenbot 4 Genetic Backtester v0.2';
 
 let PARALLEL_LIMIT = (process.env.PARALLEL_LIMIT && +process.env.PARALLEL_LIMIT) || require('os').cpus().length;
 
-let TREND_EMA_MIN = 5;
-let TREND_EMA_MAX = 40;
+let TREND_EMA_MIN = 10;
+let TREND_EMA_MAX = 60;
 
 let OVERSOLD_RSI_MIN = 20;
 let OVERSOLD_RSI_MAX = 25;
@@ -43,7 +43,7 @@ let PERIOD_MAX = 80;
 let MIN_PERIODS_MIN = 2;
 let MIN_PERIODS_MAX = 40;
 
-let PROFIT_MAX_PCT = 30;
+let PROFIT_MAX_PCT = 40;
 let PROFIT_MIN_PCT = 15
 let PROFIT_STOP_LOSS_PCT_MAX = 5;
 let PROFIT_STOP_LOSS_PCT_MIN = 1;
@@ -239,6 +239,20 @@ let RangeMakerTaker = () => {
   return r;
 };
 
+let RangeTaker = () => {
+  var r = {
+    type: 'taker'
+  };
+  return r;
+};
+
+let RangeMaker = () => {
+  var r = {
+    type: 'maker'
+  };
+  return r;
+};
+
 let RangeNeuralActivation = () => {
   var r = {
     type: 'sigmoidtanhrelu'
@@ -252,7 +266,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
     profit_stop_enable_pct: Range(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -268,7 +282,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -304,7 +318,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -351,7 +365,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -390,7 +404,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -424,7 +438,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -458,7 +472,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -499,7 +513,7 @@ let strategies = {
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     markup_pct: RangeFloat(-1, 5),
-    order_type: RangeMakerTaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -668,14 +682,14 @@ let simulateGeneration = () => {
     });
 
     let fileDate = Math.round(+new Date() / 1000);
-    let csvFileName = `simulations/backtesting_${argv.selector}_${fileDate}.csv`;
+    let csvFileName = `simulations/backtesting_${argv.selector}_${argv.use_strategies}_${fileDate}.csv`;
     
     let poolData = {};
     selectedStrategies.forEach(function(v) {
       poolData[v] = pools[v]['pool'].population();
     });
 
-    let jsonFileName = `simulations/generation_data_${argv.selector}_${fileDate}_gen_${generationCount}.json`;
+    let jsonFileName = `simulations/generation_data_${argv.selector}_${argv.use_strategies}_${fileDate}_gen_${generationCount}.json`;
     let dataJSON = JSON.stringify(poolData, null, 2);
     var filesSaved = 0;
     saveGenerationData(csvFileName, jsonFileName, dataCSV, dataJSON, (id)=>{
