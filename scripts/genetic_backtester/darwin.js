@@ -15,6 +15,7 @@ let fs = require('fs');
 let GeneticAlgorithmCtor = require('geneticalgorithm');
 let StripAnsi = require('strip-ansi');
 let moment = require('moment');
+let path = require('path');
 
 let Phenotypes = require('./phenotype.js');
 
@@ -714,7 +715,7 @@ let simulateGeneration = () => {
           
           console.log(bestCommand + '\n');
             
-          exportStuff(best, dataJSON);
+          exportBestResult(best, dataJSON);
 
           let nextGen = pools[v]['pool'].evolve();
         });
@@ -727,11 +728,29 @@ let simulateGeneration = () => {
 
 simulateGeneration();
 
-function exportStuff(best, dataJSON) {
+function exportBestResult(best, dataJSON) {
+
+  fs.isDir = function(dpath) {
+      try {
+          return fs.lstatSync(dpath).isDirectory();
+      } catch(e) {
+          return false;
+      }
+  };
+
+  fs.mkdirp = function(dirname) {
+      dirname = path.normalize(dirname).split(path.sep);
+      dirname.forEach((sdir,index)=>{
+          var pathInQuestion = dirname.slice(0,index+1).join(path.sep);
+          if((!fs.isDir(pathInQuestion)) && pathInQuestion) fs.mkdirSync(pathInQuestion);
+      });
+  };
+
   roi = best.sim.roi
   wins = best.sim.wins
   losses = best.sim.losses
   vsBuyHold = best.sim.vsBuyHold
+  days = best.sim.days
 
   // basic safety net to prevent bad config file
   if (roi > MIN_ROI && vsBuyHold >= MIN_VSBUYHOLD) {
@@ -739,18 +758,22 @@ function exportStuff(best, dataJSON) {
     selector = best.sim.selector.exchange_id + "." + best.sim.selector.product_id
     strategy = best.sim.strategy
 
-    fs.writeFile("strategies/" + selector + "_" + strategy + ".conf", parameters, err => {
+    outputDir="strategies/" + selector + "/" + days + "/"
+
+    fs.mkdirp(outputDir)
+
+    fs.writeFile(outputDir + strategy + ".conf", parameters, err => {
+     if (err) throw err; 
+    });
+
+    fs.writeFile(outputDir + strategy + "_results.json", JSON.stringify(best), err => {
      if (err) throw err;
     });
 
-    fs.writeFile("strategies/" + selector + "_" + strategy + "_results.json", JSON.stringify(best), err => {
+    fs.writeFile(outputDir + strategy + "_data.json", dataJSON, err => {
      if (err) throw err;
     });
-
-    fs.writeFile("strategies/" + selector + "_" + strategy + "_data.json", dataJSON, err => {
-     if (err) throw err;
-    });
-    console.log("Writing new config: " + "strategies/" + selector + "_" + strategy + ".conf")
+    console.log("Good result, writing new config")
     console.log("\r\nResults: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
   } else {
     console.log("\r\nNot writing new config: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
