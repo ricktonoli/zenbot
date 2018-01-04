@@ -56,9 +56,9 @@ let SELL_STOP_PCT_MAX = 20;
 let SELL_STOP_PCT_MIN = 1;
 
 // These values limit the writing of a new config file to /strategies
-let MIN_ROI = 10;
-let MIN_WIN_LOSS_RATIO = 0.5;
-let MIN_VSBUYHOLD = -5;
+let MIN_ROI = 15;
+let MIN_WIN_LOSS_RATIO = 0.3;
+let MIN_VSBUYHOLD = -10;
 
 let iterationCount = 0;
 
