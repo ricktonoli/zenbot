@@ -4,7 +4,7 @@
     "currency": "USD",
     "min_size": "0.01",
     "max_size": "30",
-    "increment": "0.00000001",
+    "increment": "0.01",
     "label": "BTC/USD"
   },
   {
@@ -12,7 +12,7 @@
     "currency": "USD",
     "min_size": "0.1",
     "max_size": "1000",
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "ETH/USD"
   },
   {
@@ -20,7 +20,7 @@
     "currency": "USD",
     "min_size": "0.01",
     "max_size": "30",
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "BCH/USD"
   },
   {
@@ -28,7 +28,7 @@
     "currency": "USD",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "BTG/USD"
   },
   {
@@ -36,7 +36,7 @@
     "currency": "USD",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "DASH/USD"
   },
   {
@@ -44,7 +44,7 @@
     "currency": "USD",
     "min_size": "10",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "XRP/USD"
   },
   {
@@ -52,7 +52,7 @@
     "currency": "USD",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "ZEC/USD"
   },
   {
@@ -60,7 +60,7 @@
     "currency": "EUR",
     "min_size": "0.01",
     "max_size": "30",
-    "increment": "0.00000001",
+    "increment": "0.01",
     "label": "BTC/EUR"
   },
   {
@@ -68,7 +68,7 @@
     "currency": "EUR",
     "min_size": "0.1",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "ETH/EUR"
   },
   {
@@ -76,7 +76,7 @@
     "currency": "EUR",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "BCH/EUR"
   },
   {
@@ -84,7 +84,7 @@
     "currency": "EUR",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "BTG/EUR"
   },
   {
@@ -92,7 +92,7 @@
     "currency": "EUR",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "DASH/EUR"
   },
   {
@@ -100,7 +100,7 @@
     "currency": "EUR",
     "min_size": "10",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "XRP/EUR"
   },
   {
@@ -108,7 +108,7 @@
     "currency": "EUR",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "ZEC/EUR"
   },
   {
@@ -116,7 +116,7 @@
     "currency": "GBP",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.01",
     "label": "BTC/GBP"
   },
   {
@@ -124,7 +124,7 @@
     "currency": "GBP",
     "min_size": "0.1",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "ETH/GBP"
   },
   {
@@ -132,7 +132,7 @@
     "currency": "GBP",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "BCH/GBP"
   },
   {
@@ -140,7 +140,7 @@
     "currency": "GBP",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "DASH/GBP"
   },
   {
@@ -148,7 +148,7 @@
     "currency": "GBP",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.0001",
     "label": "ZEC/GBP"
   },
   {
@@ -156,7 +156,7 @@
     "currency": "RUB",
     "min_size": "0.01",
     "max_size": null,
-    "increment": "0.00000001",
+    "increment": "0.01",
     "label": "BTC/RUB"
   },
   {

@@ -38,7 +38,7 @@ let OVERSOLD_RSI_PERIODS_MAX = 30;
 //let NEUTRAL_RATE_AUTO = false;
 
 // minimum period minutes
-let PERIOD_MIN = 10;
+let PERIOD_MIN = 15;
 let PERIOD_MAX = 80;
 
 let MIN_PERIODS_MIN = 2;
@@ -56,8 +56,8 @@ let SELL_STOP_PCT_MAX = 20;
 let SELL_STOP_PCT_MIN = 1;
 
 // These values limit the writing of a new config file to /strategies
-let MIN_ROI = 0.5;
-let MIN_WIN_LOSS_RATIO = 2;
+let MIN_ROI = 10;
+let MIN_WIN_LOSS_RATIO = 0.5;
 let MIN_VSBUYHOLD = -5;
 
 let iterationCount = 0;
@@ -267,7 +267,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeMaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
     profit_stop_enable_pct: Range(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -283,7 +283,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeMaker(),
+    order_type: RangeTaker(),
     sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -339,8 +339,8 @@ let strategies = {
   },
   srsi_macd: {
     // -- common
-    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
+    periodLength: RangePeriod(15, PERIOD_MAX, 'm'),
+    min_periods: Range(15, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
@@ -363,8 +363,8 @@ let strategies = {
   },
   macd: {
     // -- common
-    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
+    periodLength: RangePeriod(15, PERIOD_MAX, 'm'),
+    min_periods: Range(15, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeTaker(),
     sell_stop_pct: Range0(1, 50),
