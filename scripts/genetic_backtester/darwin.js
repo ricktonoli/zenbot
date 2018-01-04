@@ -23,7 +23,7 @@ let VERSION = 'Zenbot 4 Genetic Backtester v0.2';
 
 let PARALLEL_LIMIT = (process.env.PARALLEL_LIMIT && +process.env.PARALLEL_LIMIT) || require('os').cpus().length;
 
-let TREND_EMA_MIN = 10;
+let TREND_EMA_MIN = 15;
 let TREND_EMA_MAX = 60;
 
 let OVERSOLD_RSI_MIN = 20;
@@ -57,7 +57,7 @@ let SELL_STOP_PCT_MIN = 1;
 
 // These values limit the writing of a new config file to /strategies
 let MIN_ROI = 0.5;
-let MIN_WIN_LOSS_RATIO = 1;
+let MIN_WIN_LOSS_RATIO = 2;
 let MIN_VSBUYHOLD = -5;
 
 let iterationCount = 0;
@@ -267,7 +267,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeTaker(),
+    order_type: RangeMaker(),
     sell_stop_pct: Range(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
     profit_stop_enable_pct: Range(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -283,7 +283,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeTaker(),
+    order_type: RangeMaker(),
     sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -751,9 +751,10 @@ function exportBestResult(best, dataJSON) {
   losses = best.sim.losses
   vsBuyHold = best.sim.vsBuyHold
   days = best.sim.days
+  wlRatio = best.sim.wlRatio
 
   // basic safety net to prevent bad config file
-  if (roi > MIN_ROI && vsBuyHold >= MIN_VSBUYHOLD) {
+  if (roi > MIN_ROI && vsBuyHold >= MIN_VSBUYHOLD && wlRatio > MIN_WIN_LOSS_RATIO) {
     parameters = best.sim.params
     selector = best.sim.selector.exchange_id + "." + best.sim.selector.product_id
     strategy = best.sim.strategy
