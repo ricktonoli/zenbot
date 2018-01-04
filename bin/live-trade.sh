@@ -8,6 +8,7 @@ cd ~/zenbot
 
 if [[ -f "strategies/cexio.$1-USD/$3/$2_data.json" ]]; then
  echo "Staring live trading in manual mode"
+ echo "Executing: zenbot trade --manual cexio.$1-USD --sell_pct 100 --buy_pct 100 --conf strategies/cexio.$1-USD/$3/$2_data.json "
  /usr/bin/screen -S Live$1 -d -m bash -c "zenbot trade --manual cexio.$1-USD --sell_pct 100 --buy_pct 100 --conf strategies/cexio.$1-USD/$3/$2_data.json "
  /usr/bin/screen -r Live$1
 else 
