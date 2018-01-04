@@ -714,8 +714,10 @@ let simulateGeneration = () => {
           bestCommand = bestCommand + ' --days=' + argv.days + ' --asset_capital=' + argv.asset_capital + ' --currency_capital=' + argv.currency_capital;
           
           console.log(bestCommand + '\n');
-            
-          exportBestResult(best, dataJSON);
+
+          if (best.sim) {
+            exportBestResult(best, dataJSON);
+          }            
 
           let nextGen = pools[v]['pool'].evolve();
         });
