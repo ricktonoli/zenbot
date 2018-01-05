@@ -654,12 +654,10 @@ var saveGenerationData = function(csvFileName, jsonFileName, dataCSV, dataJSON, 
     callback(2);
   });
 }
-let generationCount = 1;
-
-console.log("Generation count now " + generationCount)
+let generationCount = 0;
 
 let simulateGeneration = () => {
-  console.log(`\n\n=== Simulating generation ${generationCount++} ===\n`);
+  console.log(`\n\n=== Simulating generation ${++generationCount} ===\n`);
 
   let days = argv.days;
   if (!days) {
