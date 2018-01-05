@@ -8,8 +8,9 @@ module.exports = function container (get) {
   let path = require('path')
 
   let run = function(reporter, tradeObject) {
+
     if (!reporter.port || reporter.port === 0) {
-      random_port({from: 20000}, function(port) {
+      random_port({from: 20000,range: 1}, function(port) {
         startServer(port, tradeObject)
       })
     } else {
