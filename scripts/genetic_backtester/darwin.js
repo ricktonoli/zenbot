@@ -173,7 +173,7 @@ let processOutput = output => {
     losses: losses,
     errorRate: parseFloat(errorRate),
     days: days,
-    period_length: params.period_length,
+    periodLength: params.periodLength,
     min_periods: params.min_periods,
     markup_pct: params.markup_pct,
     order_type: params.order_type,
@@ -223,12 +223,12 @@ let RangeFloat = (min, max) => {
   return r;
 };
 
-let RangePeriod = (min, max, period_length) => {
+let RangePeriod = (min, max, periodLength) => {
   var r = {
-    type: 'period_length',
+    type: 'periodLength',
     min: min,
     max: max,
-    period_length: period_length
+    periodLength: periodLength
   };
   return r;
 };
@@ -673,7 +673,7 @@ let simulateGeneration = () => {
 
     results.sort((a, b) => (a.fitness < b.fitness) ? 1 : ((b.fitness < a.fitness) ? -1 : 0));
 
-    let fieldsGeneral = ['selector', 'fitness', 'vsBuyHold', 'wlRatio', 'frequency', 'strategy', 'order_type', 'endBalance', 'buyHold', 'wins', 'losses', 'period_length', 'min_periods', 'days', 'params'];
+    let fieldsGeneral = ['selector', 'fitness', 'vsBuyHold', 'wlRatio', 'frequency', 'strategy', 'order_type', 'endBalance', 'buyHold', 'wins', 'losses', 'periodLength', 'min_periods', 'days', 'params'];
     let fieldNamesGeneral = ['Selector', 'Fitness', 'VS Buy Hold (%)', 'Win/Loss Ratio', '# Trades/Day', 'Strategy', 'Order Type', 'Ending Balance ($)', 'Buy Hold ($)', '# Wins', '# Losses', 'Period', 'Min Periods', '# Days', 'Full Parameters'];
 
     let dataCSV = json2csv({

@@ -37,7 +37,7 @@ module.exports = {
         r[k] = items[index];
       } else if (v.type === 'periodLength') {
         var s = Math.floor((Math.random() * (v.max - v.min + 1)) + v.min);
-        r[k] = s + v.period_length;
+        r[k] = s + v.periodLength;
       }
     }
     return r;
