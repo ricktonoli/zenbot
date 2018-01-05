@@ -27,6 +27,10 @@ module.exports = {
         r[k] = (Math.random() * (v.max - v.min)) + v.min;
       } else if (v.type === 'makertaker') {
         r[k] = (Math.random() > 0.5) ? 'maker' : 'taker';
+      } else if (v.type === 'taker') {
+        r[k] = 'taker';
+      } else if (v.type === 'maker') {
+        r[k] = 'maker';
       } else if (v.type === 'sigmoidtanhrelu') {
         var items = ['sigmoid', 'tanh', 'relu'];
         var index = Math.floor(Math.random() * items.length);
@@ -68,13 +72,14 @@ module.exports = {
     if (typeof phenotype.sim === 'undefined') return 0;
     
     var vsBuyHoldRate = (phenotype.sim.vsBuyHold / 50);
-    var wlRatioRate = 1.0 / (1.0 + Math.pow(2.71828, -(phenotype.sim.wins - phenotype.sim.losses)));
+    var wlRatio = phenotype.sim.wins - phenotype.sim.losses
+    var wlRatioRate = 1.0 / (1.0 + Math.pow(2.71828, wlRatio < 0 ? wlRatio:-(wlRatio)));
     var rate = vsBuyHoldRate * (wlRatioRate);
     return rate;
   },
 
   competition: function(phenotypeA, phenotypeB) {
-    // TODO: Refer to geneticalgorithm documentation on how to improve this with diverstiy
+    // TODO: Refer to genetic algorithm documentation on how to improve this with diverstiy
     return module.exports.fitness(phenotypeA) >= module.exports.fitness(phenotypeB);
   }
 };
