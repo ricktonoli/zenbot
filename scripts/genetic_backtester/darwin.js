@@ -281,7 +281,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeTaker(),
+    order_type: RangeMakerTaker(),
     sell_stop_pct: Range(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
     profit_stop_enable_pct: Range(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -297,7 +297,7 @@ let strategies = {
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
     markup_pct: RangeFloat(0, 5),
-    order_type: RangeTaker(),
+    order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
     profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
@@ -656,6 +656,8 @@ var saveGenerationData = function(csvFileName, jsonFileName, dataCSV, dataJSON, 
 }
 let generationCount = 1;
 
+console.log("Generation count now " + generationCount)
+
 let simulateGeneration = () => {
   console.log(`\n\n=== Simulating generation ${generationCount++} ===\n`);
 
@@ -697,7 +699,7 @@ let simulateGeneration = () => {
     });
 
     let fileDate = Math.round(+new Date() / 1000);
-    let csvFileName = `simulations/backtesting_${argv.selector}_${argv.use_strategies}_${fileDate}.csv`;
+    let csvFileName = `simulations/backtesting_${argv.selector}_${argv.use_strategies}_${fileDate}_gen_${generationCount}.csv`;
     let poolData = {};
     selectedStrategies.forEach(function(v) {
       poolData[v] = pools[v]['pool'].population();
