@@ -187,6 +187,7 @@ let processOutput = output => {
     errorRate: parseFloat(errorRate),
     periodLength: params.periodLength,
     days: days,
+    periodLength: params.periodLength,
     min_periods: params.min_periods,
     markup_pct: params.markup_pct,
     order_type: params.order_type,
