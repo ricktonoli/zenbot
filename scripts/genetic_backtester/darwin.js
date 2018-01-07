@@ -28,9 +28,13 @@ let TREND_EMA_MAX = 60;
 
 let OVERSOLD_RSI_MIN = 20;
 let OVERSOLD_RSI_MAX = 25;
+let OVERBOUGHT_RSI_MIN = 70;
+let OVERBOUGHT_RSI_MAX = 90;
 
 let OVERSOLD_RSI_PERIODS_MIN = 10;
 let OVERSOLD_RSI_PERIODS_MAX = 30;
+let OVERBOUGHT_RSI_PERIODS_MIN = 10;
+let OVERBOUGHT_RSI_PERIODS_MAX = 30;
 
 //let NEUTRAL_RATE_MIN = 10;
 //let NEUTRAL_RATE_MAX = 10;
@@ -77,7 +81,8 @@ let runCommand = (taskStrategyName, phenotype, cb) => {
     trend_ema: `--trend_ema=${phenotype.trend_ema} --oversold_rsi=${phenotype.oversold_rsi} --oversold_rsi_periods=${phenotype.oversold_rsi_periods} --neutral_rate=auto`,
     trust_distrust: `--sell_threshold=${phenotype.sell_threshold} --sell_threshold_max=${phenotype.sell_threshold_max} --sell_min=${phenotype.sell_min} --buy_threshold=${phenotype.buy_threshold} --buy_threshold_max=${phenotype.buy_threshold_max} --greed=${phenotype.greed}`,
     ta_macd: `--ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --signal_period=${phenotype.signal_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold} --overbought_rsi_periods=${phenotype.overbought_rsi_periods} --overbought_rsi=${phenotype.overbought_rsi}`,
-    ta_ema: `--trend_ema=${phenotype.trend_ema} --oversold_rsi=${phenotype.oversold_rsi} --oversold_rsi_periods=${phenotype.oversold_rsi_periods} --neutral_rate=auto`
+    ta_ema: `--trend_ema=${phenotype.trend_ema} --oversold_rsi=${phenotype.oversold_rsi} --oversold_rsi_periods=${phenotype.oversold_rsi_periods} --neutral_rate=auto`,
+    dema: `--ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold} --overbought_rsi_periods=${phenotype.overbought_rsi_periods} --overbought_rsi=${phenotype.overbought_rsi} --noise_level_pct=${phenotype.noise_level_pct}`
   };
   let zenbot_cmd = process.platform === 'win32' ? 'zenbot.bat' : './zenbot.sh';
   let command = `${zenbot_cmd} sim ${simArgs} ${commonArgs} ${strategyArgs[taskStrategyName]}`;
@@ -276,6 +281,26 @@ let RangeNeuralActivation = () => {
 };
 
 let strategies = {
+  dema: {
+// -- common
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
+    markup_pct: RangeFloat(0, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
+    buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
+
+// -- strategy
+    ema_short_period: Range(5, 15),
+    ema_long_period: Range(20, 40),
+    up_trend_threshold: RangeFloat(0, 5),
+    down_trend_threshold: RangeFloat(0, 5),
+    overbought_rsi_periods: Range(OVERBOUGHT_RSI_PERIODS_MIN, OVERBOUGHT_RSI_PERIODS_MAX),
+    overbought_rsi: Range(OVERBOUGHT_RSI_MIN, OVERBOUGHT_RSI_MAX),
+    noise_level_pct: Range(0, 20)
+  },
   trend_ema: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
