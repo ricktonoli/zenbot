@@ -47,7 +47,6 @@ module.exports = {
     var r = module.exports.create(strategy);
     for (var k in oldPhenotype) {
       if (k === 'sim') continue;
-
       var v = oldPhenotype[k];
       r[k] = (Math.random() < PROPERTY_MUTATION_CHANCE) ? r[k] : oldPhenotype[k];
     }
@@ -57,10 +56,8 @@ module.exports = {
   crossover: function(phenotypeA, phenotypeB, strategy) {
     var p1 = {};
     var p2 = {};
-
     for (var k in strategy) {
       if (k === 'sim') continue;
-
       p1[k] = Math.random() >= PROPERTY_CROSSOVER_CHANCE ? phenotypeA[k] : phenotypeB[k];
       p2[k] = Math.random() >= PROPERTY_CROSSOVER_CHANCE ? phenotypeA[k] : phenotypeB[k];
     }
@@ -72,8 +69,8 @@ module.exports = {
     if (typeof phenotype.sim === 'undefined') return 0;
 
     var vsBuyHoldRate = (phenotype.sim.vsBuyHold / 50);
-    var wlRatio = phenotype.sim.wins - phenotype.sim.losses;
-    var wlRatioRate = 1.0 / (1.0 + Math.pow(2.71828, wlRatio < 0 ? wlRatio:-(wlRatio)));
+    var wlRatio = phenotype.sim.wins/phenotype.sim.losses;
+    var wlRatioRate = 1.0 / (1.0 + Math.pow(2.71828, -(Math.abs(wlRatio))));
     var rate = vsBuyHoldRate * (wlRatioRate);
 
     return rate;

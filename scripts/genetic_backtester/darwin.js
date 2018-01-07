@@ -39,10 +39,10 @@ let OVERSOLD_RSI_PERIODS_MAX = 30;
 
 // minimum period minutes
 let PERIOD_MIN = 15;
-let PERIOD_MAX = 80;
+let PERIOD_MAX = 90;
 
-let MIN_PERIODS_MIN = 2;
-let MIN_PERIODS_MAX = 40;
+let MIN_PERIODS_MIN = 12;
+let MIN_PERIODS_MAX = 50;
 
 let PROFIT_MAX_PCT = 40;
 let PROFIT_MIN_PCT = 15
@@ -152,6 +152,7 @@ let processOutput = output => {
   );
 
   let r = JSON.parse(rawParams.replace(/[\r\n]/g, ''));
+
   delete r.asset_capital;
   delete r.buy_pct;
   delete r.currency_capital;
@@ -312,9 +313,9 @@ let strategies = {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
     min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
-    markdown_buy_pct: RangeFloat(-1, 5),
-    markup_sell_pct: RangeFloat(-1, 5),
-    markup_pct: RangeFloat(-1, 5),
+    markdown_buy_pct: RangeFloat(0, 3),
+    markup_sell_pct: RangeFloat(0, 3),
+    markup_pct: RangeFloat(0, 3),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
     buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
@@ -622,26 +623,29 @@ var isUsefulKey = key => {
   if(key == "filename" || key == "show_options" || key == "sim") return false;
   return true;
 }
+
 var generateCommandParams = input => {
   input = input.params.replace("module.exports =","");
   input = JSON.parse(input);
 
   var result = "";
   var keys = Object.keys(input);
-  for(i = 0;i < keys.length;i++){
+  for(i = 0; i < keys.length; i++){
     var key = keys[i];
     if(isUsefulKey(key)){
-      // selector should be at start before keys
-      if(key == "selector"){
+      if (key == "selector") {
         result = input[key].normalized + result;
       }
+      else {
+        result += " --" + key + "=" + input[key];
+      }
 
-      else result += " --"+key+"="+input[key];
     }
 
   }
   return result;
 }
+
 var saveGenerationData = function(csvFileName, jsonFileName, dataCSV, dataJSON, callback){
   fs.writeFile(csvFileName, dataCSV, err => {
     if (err) throw err;
@@ -682,6 +686,7 @@ let simulateGeneration = () => {
   parallel(tasks, PARALLEL_LIMIT, (err, results) => {
     console.log("\n\Generation complete, saving results...");
     results = results.filter(function(r) {
+      r.selector = r.selector.normalized;
       return !!r;
     });
 
@@ -771,7 +776,8 @@ function exportBestResult(best, dataJSON) {
   // basic safety net to prevent bad config file
   if (roi > MIN_ROI && vsBuyHold >= MIN_VSBUYHOLD && wlRatio > MIN_WIN_LOSS_RATIO) {
     parameters = best.sim.params
-    selector = best.sim.selector.exchange_id + "." + best.sim.selector.product_id
+
+    selector = best.sim.selector
     strategy = best.sim.strategy
 
     outputDir="strategies/" + selector + "/" + days + "/"
