@@ -294,12 +294,12 @@ let strategies = {
 
 // -- strategy
     ema_short_period: Range(5, 15),
-    ema_long_period: Range(20, 40),
-    up_trend_threshold: RangeFloat(0, 5),
-    down_trend_threshold: RangeFloat(0, 5),
+    ema_long_period: Range(20, 50),
+    up_trend_threshold: RangeFloat(1, 5),
+    down_trend_threshold: RangeFloat(1, 5),
     overbought_rsi_periods: Range(OVERBOUGHT_RSI_PERIODS_MIN, OVERBOUGHT_RSI_PERIODS_MAX),
     overbought_rsi: Range(OVERBOUGHT_RSI_MIN, OVERBOUGHT_RSI_MAX),
-    noise_level_pct: Range(0, 20)
+    noise_level_pct: Range(0, 10)
   },
   trend_ema: {
     // -- common
@@ -527,24 +527,6 @@ let strategies = {
     down_trend_threshold: Range(0, 50),
     overbought_rsi_periods: Range(1, 50),
     overbought_rsi: Range(20, 100)
-  },
-  trendline: {
-    // -- common
-    periodLength: RangePeriod(1, 400, 'm'),
-    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
-    markdown_buy_pct: RangeFloat(-1, 5),
-    markup_sell_pct: RangeFloat(-1, 5),
-    order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 50),
-    buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
-    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
-
-    // -- strategy
-    lastpoints: Range(20, 500),
-    avgpoints: Range(300, 3000),
-    lastpoints2: Range(5, 300),
-    avgpoints2: Range(50, 1000),
   },
   trendline: {
     // -- common
