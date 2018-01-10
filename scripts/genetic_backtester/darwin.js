@@ -18,6 +18,7 @@ let moment = require('moment');
 let path = require('path');
 
 let Phenotypes = require('./phenotype.js');
+let Export = require('./export.js');
 
 let VERSION = 'Zenbot 4 Genetic Backtester v0.2';
 
@@ -58,11 +59,6 @@ let BUY_STOP_PCT_MIN = 1;
 
 let SELL_STOP_PCT_MAX = 20;
 let SELL_STOP_PCT_MIN = 1;
-
-// These values limit the writing of a new config file to /strategies
-let MIN_ROI = 15;
-let MIN_WIN_LOSS_RATIO = 0.3;
-let MIN_VSBUYHOLD = -10;
 
 let iterationCount = 0;
 
@@ -582,7 +578,14 @@ if (argv.asset_capital) {
 if (argv.symmetrical) {
   simArgs += ` --symmetrical=true`;
 }
+
+if (argv.params) {
+
+}
+
 simArgs += ` --filename none`;
+
+
 
 let strategyName = (argv.use_strategies) ? argv.use_strategies : 'all';
 let populationFileName = (argv.population_data) ? argv.population_data : null;
@@ -742,7 +745,7 @@ let simulateGeneration = () => {
           console.log(bestCommand + '\n');
 
           if (best.sim) {
-            exportBestResult(best, dataJSON);
+            Export.best(best, dataJSON);
           }            
 
           let nextGen = pools[v]['pool'].evolve();
@@ -756,56 +759,3 @@ let simulateGeneration = () => {
 
 simulateGeneration();
 
-function exportBestResult(best, dataJSON) {
-
-  fs.isDir = function(dpath) {
-      try {
-          return fs.lstatSync(dpath).isDirectory();
-      } catch(e) {
-          return false;
-      }
-  };
-
-  fs.mkdirp = function(dirname) {
-      dirname = path.normalize(dirname).split(path.sep);
-      dirname.forEach((sdir,index)=>{
-          var pathInQuestion = dirname.slice(0,index+1).join(path.sep);
-          if((!fs.isDir(pathInQuestion)) && pathInQuestion) fs.mkdirSync(pathInQuestion);
-      });
-  };
-
-  roi = best.sim.roi
-  wins = best.sim.wins
-  losses = best.sim.losses
-  vsBuyHold = best.sim.vsBuyHold
-  days = best.sim.days
-  wlRatio = best.sim.wlRatio
-
-  // basic safety net to prevent bad config file
-  if (roi > MIN_ROI && vsBuyHold >= MIN_VSBUYHOLD && wlRatio > MIN_WIN_LOSS_RATIO) {
-    parameters = best.sim.params
-
-    selector = best.sim.selector
-    strategy = best.sim.strategy
-
-    outputDir="strategies/" + selector + "/" + days + "/"
-
-    fs.mkdirp(outputDir)
-
-    fs.writeFile(outputDir + strategy + ".conf", parameters, err => {
-     if (err) throw err; 
-    });
-
-    fs.writeFile(outputDir + strategy + "_results.json", JSON.stringify(best), err => {
-     if (err) throw err;
-    });
-
-    fs.writeFile(outputDir + strategy + "_data.json", dataJSON, err => {
-     if (err) throw err;
-    });
-    console.log("Good result, writing new config")
-    console.log("\r\nResults: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
-  } else {
-    console.log("\r\nNot writing new config: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
-  }
-}
