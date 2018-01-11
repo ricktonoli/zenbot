@@ -65,17 +65,25 @@ module.exports = function container (get, set, clear) {
           var d = tb('1d')
           so.start = d.subtract(so.days).toMilliseconds()
         }
+
         so.stats = !!cmd.enable_stats
         so.show_options = !cmd.disable_options
         so.verbose = !!cmd.verbose
         so.selector = get('lib.objectify-selector')(selector || c.selector)
         so.mode = 'sim'
+
         if (cmd.conf) {
           var overrides = require(path.resolve(process.cwd(), cmd.conf))
           Object.keys(overrides).forEach(function (k) {
-            so[k] = overrides[k]
+            // Handle the case where the start date comes in as a YYYYmmddHHmm format, comvert it to epoch, the format used by the sim.
+            if (k === "start" || k === "end") {
+              so[k] = moment(so[k]).valueOf();
+            } else {
+              so[k] = overrides[k]
+            }
           })
         }
+
         var engine = get('lib.engine')(s)
         if (!so.min_periods) so.min_periods = 1
         var cursor, reversing, reverse_point

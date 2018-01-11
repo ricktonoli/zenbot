@@ -11,26 +11,30 @@ let shell = require('shelljs');
 let parallel = require('run-parallel-limit');
 let json2csv = require('json2csv');
 let roundp = require('round-precision');
-let fs = require('fs');
 let GeneticAlgorithmCtor = require('geneticalgorithm');
 let StripAnsi = require('strip-ansi');
 let moment = require('moment');
-let path = require('path');
+let fs = require('fs');
 
 let Phenotypes = require('./phenotype.js');
+let Export = require('./export.js');
 
 let VERSION = 'Zenbot 4 Genetic Backtester v0.2';
 
 let PARALLEL_LIMIT = (process.env.PARALLEL_LIMIT && +process.env.PARALLEL_LIMIT) || require('os').cpus().length;
 
-let TREND_EMA_MIN = 15;
-let TREND_EMA_MAX = 60;
+let TREND_EMA_MIN = 10;
+let TREND_EMA_MAX = 100;
 
 let OVERSOLD_RSI_MIN = 20;
 let OVERSOLD_RSI_MAX = 25;
+let OVERBOUGHT_RSI_MIN = 70;
+let OVERBOUGHT_RSI_MAX = 90;
 
-let OVERSOLD_RSI_PERIODS_MIN = 10;
-let OVERSOLD_RSI_PERIODS_MAX = 30;
+let OVERSOLD_RSI_PERIODS_MIN = 3;
+let OVERSOLD_RSI_PERIODS_MAX = 20;
+let OVERBOUGHT_RSI_PERIODS_MIN = 3;
+let OVERBOUGHT_RSI_PERIODS_MAX = 20;
 
 //let NEUTRAL_RATE_MIN = 10;
 //let NEUTRAL_RATE_MAX = 10;
@@ -38,11 +42,11 @@ let OVERSOLD_RSI_PERIODS_MAX = 30;
 //let NEUTRAL_RATE_AUTO = false;
 
 // minimum period minutes
-let PERIOD_MIN = 15;
-let PERIOD_MAX = 80;
+let PERIOD_MIN = 5;
+let PERIOD_MAX = 90;
 
-let MIN_PERIODS_MIN = 2;
-let MIN_PERIODS_MAX = 40;
+let MIN_PERIODS_MIN = 12;
+let MIN_PERIODS_MAX = 50;
 
 let PROFIT_MAX_PCT = 40;
 let PROFIT_MIN_PCT = 15
@@ -54,11 +58,6 @@ let BUY_STOP_PCT_MIN = 1;
 
 let SELL_STOP_PCT_MAX = 20;
 let SELL_STOP_PCT_MIN = 1;
-
-// These values limit the writing of a new config file to /strategies
-let MIN_ROI = 15;
-let MIN_WIN_LOSS_RATIO = 0.3;
-let MIN_VSBUYHOLD = -10;
 
 let iterationCount = 0;
 
@@ -154,6 +153,7 @@ let processOutput = output => {
   );
 
   let r = JSON.parse(rawParams.replace(/[\r\n]/g, ''));
+
   delete r.asset_capital;
   delete r.buy_pct;
   delete r.currency_capital;
@@ -590,6 +590,7 @@ if (argv.asset_capital) {
 if (argv.symmetrical) {
   simArgs += ` --symmetrical=true`;
 }
+
 simArgs += ` --filename none`;
 
 let strategyName = (argv.use_strategies) ? argv.use_strategies : 'all';
@@ -637,26 +638,29 @@ var isUsefulKey = key => {
   if(key == "filename" || key == "show_options" || key == "sim") return false;
   return true;
 }
+
 var generateCommandParams = input => {
   input = input.params.replace("module.exports =","");
   input = JSON.parse(input);
 
   var result = "";
   var keys = Object.keys(input);
-  for(i = 0;i < keys.length;i++){
+  for(i = 0; i < keys.length; i++){
     var key = keys[i];
     if(isUsefulKey(key)){
-      // selector should be at start before keys
-      if(key == "selector"){
+      if (key == "selector") {
         result = input[key].normalized + result;
       }
+      else {
+        result += " --" + key + "=" + input[key];
+      }
 
-      else result += " --"+key+"="+input[key];
     }
 
   }
   return result;
 }
+
 var saveGenerationData = function(csvFileName, jsonFileName, dataCSV, dataJSON, callback){
   fs.writeFile(csvFileName, dataCSV, err => {
     if (err) throw err;
@@ -697,6 +701,9 @@ let simulateGeneration = () => {
   parallel(tasks, PARALLEL_LIMIT, (err, results) => {
     console.log("\n\Generation complete, saving results...");
     results = results.filter(function(r) {
+      if (r) {
+	       r.selector = r.selector.normalized;
+      }
       return !!r;
     });
 
@@ -712,7 +719,8 @@ let simulateGeneration = () => {
     });
 
     let fileDate = Math.round(+new Date() / 1000);
-    let csvFileName = `simulations/backtesting_${argv.selector}_${argv.use_strategies}_${fileDate}.csv`;
+    let csvFileName = `simulations/backtesting_${argv.selector}_${argv.use_strategies}_${fileDate}_gen_${generationCount}.csv`;
+
     let poolData = {};
     selectedStrategies.forEach(function(v) {
       poolData[v] = pools[v]['pool'].population();
@@ -724,7 +732,7 @@ let simulateGeneration = () => {
     saveGenerationData(csvFileName, jsonFileName, dataCSV, dataJSON, (id)=>{
       filesSaved++;
       if(filesSaved == 2){
-        console.log(`\n\nGeneration's Best Results`);
+        console.log(`\n\nGenerations Best Results`);
         selectedStrategies.forEach((v)=> {
           let best = pools[v]['pool'].best();
           if(best.sim){
@@ -744,7 +752,7 @@ let simulateGeneration = () => {
           console.log(bestCommand + '\n');
 
           if (best.sim) {
-            exportBestResult(best, dataJSON);
+            Export.best(best, dataJSON);
           }            
 
           let nextGen = pools[v]['pool'].evolve();
@@ -757,56 +765,3 @@ let simulateGeneration = () => {
 };
 
 simulateGeneration();
-
-function exportBestResult(best, dataJSON) {
-
-  fs.isDir = function(dpath) {
-      try {
-          return fs.lstatSync(dpath).isDirectory();
-      } catch(e) {
-          return false;
-      }
-  };
-
-  fs.mkdirp = function(dirname) {
-      dirname = path.normalize(dirname).split(path.sep);
-      dirname.forEach((sdir,index)=>{
-          var pathInQuestion = dirname.slice(0,index+1).join(path.sep);
-          if((!fs.isDir(pathInQuestion)) && pathInQuestion) fs.mkdirSync(pathInQuestion);
-      });
-  };
-
-  roi = best.sim.roi
-  wins = best.sim.wins
-  losses = best.sim.losses
-  vsBuyHold = best.sim.vsBuyHold
-  days = best.sim.days
-  wlRatio = best.sim.wlRatio
-
-  // basic safety net to prevent bad config file
-  if (roi > MIN_ROI && vsBuyHold >= MIN_VSBUYHOLD && wlRatio > MIN_WIN_LOSS_RATIO) {
-    parameters = best.sim.params
-    selector = best.sim.selector.exchange_id + "." + best.sim.selector.product_id
-    strategy = best.sim.strategy
-
-    outputDir="strategies/" + selector + "/" + days + "/"
-
-    fs.mkdirp(outputDir)
-
-    fs.writeFile(outputDir + strategy + ".conf", parameters, err => {
-     if (err) throw err; 
-    });
-
-    fs.writeFile(outputDir + strategy + "_results.json", JSON.stringify(best), err => {
-     if (err) throw err;
-    });
-
-    fs.writeFile(outputDir + strategy + "_data.json", dataJSON, err => {
-     if (err) throw err;
-    });
-    console.log("Good result, writing new config")
-    console.log("\r\nResults: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
-  } else {
-    console.log("\r\nNot writing new config: roi: " + roi + ", wins: " + wins + ", losses: " + losses + ", vsBuyHold: " + vsBuyHold)
-  }
-}
