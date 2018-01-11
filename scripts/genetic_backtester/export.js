@@ -1,10 +1,14 @@
 // These values limit the writing of a new config file to /strategies
+let fs = require('fs');
+let path = require('path');
+
 let MIN_ROI = 15;
 let MIN_WIN_LOSS_RATIO = 0.3;
 let MIN_VSBUYHOLD = -10;
 
 module.exports = {
-  create: function best(best, dataJSON) {
+  best: function(best, dataJSON) {
+
 
     fs.isDir = function(dpath) {
         try {
@@ -21,6 +25,7 @@ module.exports = {
             if((!fs.isDir(pathInQuestion)) && pathInQuestion) fs.mkdirSync(pathInQuestion);
         });
     };
+
 
     roi = best.sim.roi
     wins = best.sim.wins

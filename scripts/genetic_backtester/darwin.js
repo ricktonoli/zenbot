@@ -11,11 +11,10 @@ let shell = require('shelljs');
 let parallel = require('run-parallel-limit');
 let json2csv = require('json2csv');
 let roundp = require('round-precision');
-let fs = require('fs');
 let GeneticAlgorithmCtor = require('geneticalgorithm');
 let StripAnsi = require('strip-ansi');
 let moment = require('moment');
-let path = require('path');
+let fs = require('fs');
 
 let Phenotypes = require('./phenotype.js');
 let Export = require('./export.js');
@@ -24,18 +23,18 @@ let VERSION = 'Zenbot 4 Genetic Backtester v0.2';
 
 let PARALLEL_LIMIT = (process.env.PARALLEL_LIMIT && +process.env.PARALLEL_LIMIT) || require('os').cpus().length;
 
-let TREND_EMA_MIN = 15;
-let TREND_EMA_MAX = 60;
+let TREND_EMA_MIN = 10;
+let TREND_EMA_MAX = 100;
 
 let OVERSOLD_RSI_MIN = 20;
 let OVERSOLD_RSI_MAX = 25;
 let OVERBOUGHT_RSI_MIN = 70;
 let OVERBOUGHT_RSI_MAX = 90;
 
-let OVERSOLD_RSI_PERIODS_MIN = 10;
-let OVERSOLD_RSI_PERIODS_MAX = 30;
-let OVERBOUGHT_RSI_PERIODS_MIN = 10;
-let OVERBOUGHT_RSI_PERIODS_MAX = 30;
+let OVERSOLD_RSI_PERIODS_MIN = 3;
+let OVERSOLD_RSI_PERIODS_MAX = 20;
+let OVERBOUGHT_RSI_PERIODS_MIN = 3;
+let OVERBOUGHT_RSI_PERIODS_MAX = 20;
 
 //let NEUTRAL_RATE_MIN = 10;
 //let NEUTRAL_RATE_MAX = 10;
@@ -277,26 +276,6 @@ let RangeNeuralActivation = () => {
 };
 
 let strategies = {
-  dema: {
-// -- common
-    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
-    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
-    markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
-    buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
-    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
-    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
-
-// -- strategy
-    ema_short_period: Range(5, 15),
-    ema_long_period: Range(20, 50),
-    up_trend_threshold: RangeFloat(1, 5),
-    down_trend_threshold: RangeFloat(1, 5),
-    overbought_rsi_periods: Range(OVERBOUGHT_RSI_PERIODS_MIN, OVERBOUGHT_RSI_PERIODS_MAX),
-    overbought_rsi: Range(OVERBOUGHT_RSI_MIN, OVERBOUGHT_RSI_MAX),
-    noise_level_pct: Range(0, 10)
-  },
   trend_ema: {
     // -- common
     periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
@@ -542,7 +521,27 @@ let strategies = {
     avgpoints: Range(300, 3000),
     lastpoints2: Range(5, 300),
     avgpoints2: Range(50, 1000),
-   }
+   },
+   dema: {
+    // -- common
+    periodLength: RangePeriod(PERIOD_MIN, PERIOD_MAX, 'm'),
+    min_periods: Range(MIN_PERIODS_MIN, MIN_PERIODS_MAX),
+    markup_pct: RangeFloat(0, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(SELL_STOP_PCT_MIN, SELL_STOP_PCT_MAX),
+    buy_stop_pct: Range0(BUY_STOP_PCT_MIN, BUY_STOP_PCT_MAX),
+    profit_stop_enable_pct: Range0(PROFIT_MIN_PCT, PROFIT_MAX_PCT),
+    profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
+
+    // -- strategy
+    ema_short_period: Range(5, 15),
+    ema_long_period: Range(20, 50),
+    up_trend_threshold: RangeFloat(1, 5),
+    down_trend_threshold: RangeFloat(1, 5),
+    overbought_rsi_periods: Range(OVERBOUGHT_RSI_PERIODS_MIN, OVERBOUGHT_RSI_PERIODS_MAX),
+    overbought_rsi: Range(OVERBOUGHT_RSI_MIN, OVERBOUGHT_RSI_MAX),
+    noise_level_pct: Range(0, 10)
+  }
 };
 
 let allStrategyNames = () => {
@@ -579,13 +578,7 @@ if (argv.symmetrical) {
   simArgs += ` --symmetrical=true`;
 }
 
-if (argv.params) {
-
-}
-
 simArgs += ` --filename none`;
-
-
 
 let strategyName = (argv.use_strategies) ? argv.use_strategies : 'all';
 let populationFileName = (argv.population_data) ? argv.population_data : null;
@@ -696,7 +689,7 @@ let simulateGeneration = () => {
     console.log("\n\Generation complete, saving results...");
     results = results.filter(function(r) {
       if (r) {
-	r.selector = r.selector.normalized;
+	       r.selector = r.selector.normalized;
       }
       return !!r;
     });
@@ -714,6 +707,7 @@ let simulateGeneration = () => {
 
     let fileDate = Math.round(+new Date() / 1000);
     let csvFileName = `simulations/backtesting_${argv.selector}_${argv.use_strategies}_${fileDate}_gen_${generationCount}.csv`;
+
     let poolData = {};
     selectedStrategies.forEach(function(v) {
       poolData[v] = pools[v]['pool'].population();
@@ -725,7 +719,7 @@ let simulateGeneration = () => {
     saveGenerationData(csvFileName, jsonFileName, dataCSV, dataJSON, (id)=>{
       filesSaved++;
       if(filesSaved == 2){
-        console.log(`\n\nGeneration's Best Results`);
+        console.log(`\n\nGenerations Best Results`);
         selectedStrategies.forEach((v)=> {
           let best = pools[v]['pool'].best();
           if(best.sim){
@@ -758,4 +752,3 @@ let simulateGeneration = () => {
 };
 
 simulateGeneration();
-
