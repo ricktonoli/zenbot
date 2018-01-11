@@ -42,7 +42,7 @@ let OVERBOUGHT_RSI_PERIODS_MAX = 20;
 //let NEUTRAL_RATE_AUTO = false;
 
 // minimum period minutes
-let PERIOD_MIN = 15;
+let PERIOD_MIN = 5;
 let PERIOD_MAX = 90;
 
 let MIN_PERIODS_MIN = 12;
@@ -534,8 +534,8 @@ let strategies = {
     profit_stop_pct: Range(PROFIT_STOP_LOSS_PCT_MIN,PROFIT_STOP_LOSS_PCT_MAX),
 
     // -- strategy
-    ema_short_period: Range(5, 15),
-    ema_long_period: Range(20, 50),
+    ema_short_period: Range(1, 20),
+    ema_long_period: Range(20, 60),
     up_trend_threshold: RangeFloat(1, 5),
     down_trend_threshold: RangeFloat(1, 5),
     overbought_rsi_periods: Range(OVERBOUGHT_RSI_PERIODS_MIN, OVERBOUGHT_RSI_PERIODS_MAX),
