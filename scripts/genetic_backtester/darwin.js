@@ -77,7 +77,7 @@ let runCommand = (taskStrategyName, phenotype, cb) => {
     trust_distrust: `--sell_threshold=${phenotype.sell_threshold} --sell_threshold_max=${phenotype.sell_threshold_max} --sell_min=${phenotype.sell_min} --buy_threshold=${phenotype.buy_threshold} --buy_threshold_max=${phenotype.buy_threshold_max} --greed=${phenotype.greed}`,
     ta_macd: `--ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --signal_period=${phenotype.signal_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold} --overbought_rsi_periods=${phenotype.overbought_rsi_periods} --overbought_rsi=${phenotype.overbought_rsi}`,
     ta_ema: `--trend_ema=${phenotype.trend_ema} --oversold_rsi=${phenotype.oversold_rsi} --oversold_rsi_periods=${phenotype.oversold_rsi_periods} --neutral_rate=auto`,
-    dema: `--ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --signal_period=${phenotype.signal_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold} --overbought_rsi_periods=${phenotype.overbought_rsi_periods} --overbought_rsi=${phenotype.overbought_rsi}`
+    dema: `--ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --signal_period=${phenotype.signal_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold} --overbought_rsi_periods=${phenotype.overbought_rsi_periods} --overbought_rsi=${phenotype.overbought_rsi} --noise_level_pct=${phenotype.noise_level_pct}`
   };
 
   let zenbot_cmd = process.platform === 'win32' ? 'zenbot.bat' : './zenbot.sh';
@@ -99,6 +99,7 @@ let runCommand = (taskStrategyName, phenotype, cb) => {
     let result = null;
     try {
       result = processOutput(stdout);
+
       phenotype['sim'] = result;
       result['fitness'] = Phenotypes.fitness(phenotype);
     } catch (err) {
@@ -121,6 +122,8 @@ let runUpdate = (days, selector) => {
     async: false
   });
 };
+
+
 
 let processOutput = output => {
   let jsonRegexp = /(\{[\s\S]*?\})\send balance/g;
@@ -168,7 +171,7 @@ let processOutput = output => {
   delete r.stats;
   delete r.use_strategies;
   delete r.verbose;
-  r.selector = r.selector.normalized
+//  r.selector = r.selector.normalized
   
   if (start) {
     r.start = moment(start).format("YYYYMMDDhhmm");
@@ -554,7 +557,8 @@ let strategies = {
     up_trend_threshold: Range(0, 50),
     down_trend_threshold: Range(0, 50),
     overbought_rsi_periods: Range(1, 30),
-    overbought_rsi: Range(70, 95)
+    overbought_rsi: Range(70, 95),
+    noise_level_pct: Range(0, 5)
   }
 };
 
@@ -691,6 +695,7 @@ let simulateGeneration = () => {
       days = moment().diff(end, 'days') + 1;
     }
   }
+
   runUpdate(days, argv.selector);
 
   iterationCount = 1;
