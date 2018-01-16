@@ -1,5 +1,3 @@
-process.env["NTBA_FIX_319"] = 1;
-
 var TelegramBot = require('node-telegram-bot-api');
 
 module.exports = function container (get, set, clear) {
