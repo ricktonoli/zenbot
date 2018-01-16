@@ -49,6 +49,7 @@ module.exports = function container (get, set, clear) {
           }
         })
 
+
         if (so.start) {
           so.start = moment(so.start, "YYYYMMDDhhmm").valueOf()
           if (so.days && !so.end) {
@@ -65,6 +66,8 @@ module.exports = function container (get, set, clear) {
           var d = tb('1d')
           so.start = d.subtract(so.days).toMilliseconds()
         }
+        so.days = moment(so.end).diff(moment(so.start), 'days')
+
         so.days = moment(so.end).diff(moment(so.start), 'days')
 
         so.stats = !!cmd.enable_stats
