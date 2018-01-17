@@ -2,7 +2,7 @@
 let fs = require('fs');
 let path = require('path');
 
-let MIN_ROI = 15;
+let MIN_ROI = 5;
 let MIN_WIN_LOSS_RATIO = 0.3;
 let MIN_VSBUYHOLD = -10;
 

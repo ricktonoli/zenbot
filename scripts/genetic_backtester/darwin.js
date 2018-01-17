@@ -59,7 +59,7 @@ let BUY_STOP_PCT_MIN = 1;
 let SELL_STOP_PCT_MAX = 20;
 let SELL_STOP_PCT_MIN = 1;
 
-let FITNESS_CUTOFF = 0.2;
+let FITNESS_CUTOFF = 0.5;
 
 let iterationCount = 0;
 
@@ -736,7 +736,7 @@ let simulateGeneration = () => {
       if (r.fitness > FITNESS_CUTOFF) {
 	      return !!r;
       } else {
-      	console.log("Eliminating unfit candidate")
+      	console.log("Eliminating unfit candidate with fitness of " + r.fitness)
       	return false;
       }
     });
