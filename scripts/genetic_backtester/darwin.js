@@ -7,6 +7,10 @@
  * Example: ./darwin.js --selector="bitfinex.ETH-USD" --days="10" --currency_capital="5000" --use_strategies="all | macd,trend_ema,etc" --population="101" --population_data="simulations/generation_data_NUMBERS_gen_X.json"
  */
 
+Array.prototype.pushArray = function(arr) {
+    this.push.apply(this, arr);
+};
+
 let shell = require('shelljs');
 let parallel = require('run-parallel-limit');
 let json2csv = require('json2csv');
@@ -102,13 +106,14 @@ let runCommand = (taskStrategyName, phenotype, cb) => {
     let result = null;
     try {
       result = processOutput(stdout);
-
       phenotype['sim'] = result;
       result['fitness'] = Phenotypes.fitness(phenotype);
     } catch (err) {
       console.log(`Bad output detected`, err.toString());
       console.log(stdout);
     }
+
+
 
     cb(null, result);
   });
@@ -594,6 +599,7 @@ let allStrategyNames = () => {
 console.log(`\n--==${VERSION}==--`);
 console.log(new Date().toUTCString() + `\n`);
 
+// Get params
 let argv = require('yargs').argv;
 let simArgs = (argv.selector) ? argv.selector : 'bitfinex.ETH-USD';
 if (argv.days) {
@@ -633,8 +639,8 @@ let importedPoolData = (populationFileName) ? JSON.parse(fs.readFileSync(populat
 
 selectedStrategies.forEach(function(v) {
   let strategyPool = pools[v] = {};
-
   let evolve = true;
+
   let population = (importedPoolData && importedPoolData[v]) ? importedPoolData[v] : [];
   for (var i = population.length; i < populationSize; ++i) {
     population.push(Phenotypes.create(strategies[v]));
@@ -656,14 +662,10 @@ selectedStrategies.forEach(function(v) {
 
   strategyPool['pool'] = GeneticAlgorithmCtor(strategyPool.config);
   if (evolve) {
+    console.log(">>>>>>>>>Evolving")
     strategyPool['pool'].evolve();
   }
 });
-
-var isUsefulKey = key => {
-  if(key == "filename" || key == "show_options" || key == "sim") return false;
-  return true;
-}
 
 var generateCommandParams = input => {
   input = input.params.replace("module.exports =","");
@@ -687,6 +689,12 @@ var generateCommandParams = input => {
   return result;
 }
 
+var isUsefulKey = key => {
+  if(key == "filename" || key == "show_options" || key == "sim") return false;
+  return true;
+}
+
+// Save generation data.
 var saveGenerationData = function(csvFileName, jsonFileName, dataCSV, dataJSON, callback){
   fs.writeFile(csvFileName, dataCSV, err => {
     if (err) throw err;
@@ -699,8 +707,10 @@ var saveGenerationData = function(csvFileName, jsonFileName, dataCSV, dataJSON, 
     callback(2);
   });
 }
+
 let generationCount = 0;
 
+// Run simulations
 let simulateGeneration = () => {
   console.log(`\n\n=== Simulating generation ${++generationCount} ===\n`);
 
@@ -720,7 +730,6 @@ let simulateGeneration = () => {
 
   iterationCount = 1;
 
-
   let tasks = selectedStrategies.map(v => pools[v]['pool'].population().map(phenotype => {
     return cb => {
       runCommand(v, phenotype, cb);
@@ -729,29 +738,52 @@ let simulateGeneration = () => {
 
   parallel(tasks, PARALLEL_LIMIT, (err, results) => {
     console.log("\n\Generation complete, saving results...");
+
     results = results.filter(function(r) {
       if (r) {
 	       r.selector = r.selector.normalized;
-      }
-      if (r.fitness > FITNESS_CUTOFF) {
-	      return !!r;
-      } else {
-      	console.log("Eliminating unfit candidate with fitness of " + r.fitness)
-      	return false;
+        if (r.fitness > FITNESS_CUTOFF) {
+          return !!r;
+        } else {
+          return false;
+        }
       }
     });
 
     let poolData = {};
     selectedStrategies.forEach(function(v) {
       data = pools[v]['pool'].population();
+      var deathCount = 0;
       data = data.filter(function(r) {
         if (r.sim.fitness > FITNESS_CUTOFF) {
+          console.log("Keeping candidate with fitness of " + r.sim.fitness)
           return !!r
         } else {
+          console.log("Eliminating unfit candidate with fitness of " + r.sim.fitness)
           return false;
         }
       })
+
       poolData[v] = data;
+
+      // trim unfit individuals from the base population
+      population = pools[v]['config'].population;
+      population = population.filter(function(r) {
+        if (r.sim.fitness > FITNESS_CUTOFF) {
+          return !!r
+        } else {
+          deathCount++
+          return false;
+        }
+      })
+
+      // repopulate for each death
+      for (var i = 1; i <= deathCount; i++) {
+        console.log("Creating a new individual")
+        population.push(Phenotypes.create(strategies[v]));
+      }  
+      pools[v]['config'].population = population;
+
     });
 
     if (results.length > 0) {
@@ -790,18 +822,16 @@ let simulateGeneration = () => {
 
 	          // prepare command snippet from top result for this strat
 	          let prefix = './zenbot.sh sim ';
-	          if (results[0]) {
-		          let bestCommand = generateCommandParams(results[0]);
+	          let bestCommand = generateCommandParams(results[0]);
 
-		          bestCommand = prefix + bestCommand;
-		          bestCommand = bestCommand + ' --asset_capital=' + argv.asset_capital + ' --currency_capital=' + argv.currency_capital;
+	          bestCommand = prefix + bestCommand;
+	          bestCommand = bestCommand + ' --asset_capital=' + argv.asset_capital + ' --currency_capital=' + argv.currency_capital;
 
-		          console.log(bestCommand + '\n');
+	          console.log(bestCommand + '\n');
 
-		          if (best.sim.length > 0) {
-		            Export.best(best, dataJSON);
-		          }            
-	          }
+	          if (best.sim.length > 0) {
+	            Export.best(best, dataJSON);
+	          }            
 
 	          let nextGen = pools[v]['pool'].evolve();
 	        });
@@ -816,3 +846,4 @@ let simulateGeneration = () => {
 };
 
 simulateGeneration();
+
