@@ -1,0 +1,40 @@
+{
+  "bollinger": [
+    {
+      "period_length": "42m",
+      "min_periods": 12,
+      "markdown_buy_pct": -0.2447359123967523,
+      "markup_sell_pct": 1.5575022693188543,
+      "order_type": "maker",
+      "sell_stop_pct": 0,
+      "buy_stop_pct": 0,
+      "profit_stop_enable_pct": 0,
+      "profit_stop_pct": 10,
+      "bollinger_size": 1,
+      "bollinger_time": 3.0491797351499894,
+      "bollinger_upper_bound_pct": 0.3085492728495025,
+      "bollinger_lower_bound_pct": 21.96892134098048,
+      "sim": {
+        "params": "module.exports = {\"avg_slippage_pct\":0.045,\"bollinger_lower_bound_pct\":21.96892134098048,\"bollinger_size\":1,\"bollinger_time\":3.0491797351499894,\"bollinger_upper_bound_pct\":0.3085492728495025,\"buy_stop_pct\":0,\"filename\":\"none\",\"markdown_buy_pct\":-0.2447359123967523,\"markup_sell_pct\":1.5575022693188543,\"max_sell_loss_pct\":25,\"max_slippage_pct\":5,\"min_periods\":12,\"order_type\":\"maker\",\"period\":\"42m\",\"period_length\":\"42m\",\"profit_stop_enable_pct\":0,\"profit_stop_pct\":10,\"rsi_periods\":14,\"selector\":{\"exchange_id\":\"cexio\",\"product_id\":\"ETH-BTC\",\"asset\":\"ETH\",\"currency\":\"BTC\",\"normalized\":\"cexio.ETH-BTC\"},\"sell_stop_pct\":0,\"show_options\":true,\"strategy\":\"bollinger\",\"start\":\"201712190100\"}",
+        "endBalance": 0.0360247,
+        "buyHold": 0.03044062,
+        "vsBuyHold": 18.34,
+        "wins": 9,
+        "losses": 6,
+        "errorRate": 40,
+        "period_length": "42m",
+        "days": 30,
+        "min_periods": 12,
+        "markdown_buy_pct": -0.2447359123967523,
+        "markup_sell_pct": 1.5575022693188543,
+        "order_type": "maker",
+        "roi": 157.319,
+        "wlRatio": 1.5,
+        "selector": "cexio.ETH-BTC",
+        "strategy": "bollinger",
+        "frequency": 0.5,
+        "fitness": 0.3494041562792594
+      }
+    }
+  ]
+}
