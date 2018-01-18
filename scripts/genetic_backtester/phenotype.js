@@ -44,18 +44,20 @@ module.exports = {
   },
 
   mutation: function(oldPhenotype, strategy) {
- //   console.log(">>>>>>>>Mutating")
-    var r = module.exports.create(strategy);
+    // console.log(">>>>>>>>Mutating")
+    // console.log(">>>>>>>PHENOTYPE" + JSON.stringify(oldPhenotype))
+    // var r = module.exports.create(strategy);
     for (var k in oldPhenotype) {
       if (k === 'sim') continue;
       var v = oldPhenotype[k];
       r[k] = (Math.random() < PROPERTY_MUTATION_CHANCE) ? r[k] : oldPhenotype[k];
     }
+    console.log(">>>>>> POST MUTATION" + JSON.stringify(r))
     return r;
   },
 
   crossover: function(phenotypeA, phenotypeB, strategy) {
-//    console.log(">>>>>>>>>Crossover")
+    // console.log(">>>>>>>>>Crossover")
 
     var p1 = {};
     var p2 = {};
@@ -82,7 +84,10 @@ module.exports = {
 
   competition: function(phenotypeA, phenotypeB) {
     // TODO: Refer to genetic algorithm documentation on how to improve this with diverstiy
-//    console.log(">>>>>>>>Competing")
+    // console.log(">>>>> A, fitness " + module.exports.fitness(phenotypeA) + " competing against B, fitness " + module.exports.fitness(phenotypeB));
+    // console.log(">>>>>>>PHENOTYPEA" + JSON.stringify(phenotypeA))
+    // console.log(">>>>>>>PHENOTYPEB" + JSON.stringify(phenotypeB))
+
     return module.exports.fitness(phenotypeA) >= module.exports.fitness(phenotypeB);
   }
 };
