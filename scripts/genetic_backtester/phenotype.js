@@ -46,7 +46,7 @@ module.exports = {
   mutation: function(oldPhenotype, strategy) {
     // console.log(">>>>>>>>Mutating")
     // console.log(">>>>>>>PHENOTYPE" + JSON.stringify(oldPhenotype))
-    // var r = module.exports.create(strategy);
+    var r = module.exports.create(strategy);
     for (var k in oldPhenotype) {
       if (k === 'sim') continue;
       var v = oldPhenotype[k];
