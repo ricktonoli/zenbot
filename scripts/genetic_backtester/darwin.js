@@ -63,7 +63,7 @@ let BUY_STOP_PCT_MIN = 1;
 let SELL_STOP_PCT_MAX = 20;
 let SELL_STOP_PCT_MIN = 1;
 
-let FITNESS_CUTOFF = 0.3;
+let FITNESS_CUTOFF = 0.5;
 
 let iterationCount = 0;
 
@@ -293,19 +293,19 @@ let strategies = {
   bollinger: {
     period_length: RangePeriod(1, 60, 'm'),
     min_periods: Range(1, 20),
-    markdown_buy_pct: RangeFloat(-1, 5),
-    markup_sell_pct: RangeFloat(-1, 5),
+    markdown_buy_pct: RangeFloat(0, 3),
+    markup_sell_pct: RangeFloat(0, 3),
     order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 50),
-    buy_stop_pct: Range0(1, 50),
+    sell_stop_pct: Range0(1, 30),
+    buy_stop_pct: Range0(1, 30),
     profit_stop_enable_pct: Range0(1, 20),
     profit_stop_pct: Range(1,20),
 
   // -- strategy
     bollinger_size: Range(1, 40),
     bollinger_time: RangeFloat(1,6),
-    bollinger_upper_bound_pct: RangeFloat(-1, 30),
-    bollinger_lower_bound_pct: RangeFloat(-1, 30)
+    bollinger_upper_bound_pct: RangeFloat(1, 30),
+    bollinger_lower_bound_pct: RangeFloat(1, 30)
   },
   crossover_vwap: {
     // -- common
@@ -818,7 +818,7 @@ let simulateGeneration = () => {
 
 	          let best = pools[v]['pool'].best();
 
-	          if(best.sim.fitness > 0){
+	          if(best.sim && best.sim.fitness > 0){
 	            console.log(`\t(${v}) Sim Fitness ${best.sim.fitness}, VS Buy and Hold: ${best.sim.vsBuyHold} End Balance: ${best.sim.endBalance}, Wins/Losses ${best.sim.wins}/${best.sim.losses}.`);
 
 	          } else {
@@ -834,7 +834,7 @@ let simulateGeneration = () => {
 
 	          console.log(bestCommand + '\n');
 
-	          if (best.sim.fitness > 0) {
+	          if (best.sim && best.sim.fitness > 0) {
 	            Export.best(best, dataJSON);
 	          }            
 
