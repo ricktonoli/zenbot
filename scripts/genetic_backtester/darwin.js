@@ -63,7 +63,7 @@ let BUY_STOP_PCT_MIN = 1;
 let SELL_STOP_PCT_MAX = 20;
 let SELL_STOP_PCT_MIN = 1;
 
-let FITNESS_CUTOFF = 0.5;
+let FITNESS_CUTOFF = 0.3;
 
 let iterationCount = 0;
 
@@ -662,7 +662,7 @@ selectedStrategies.forEach(function(v) {
 
   strategyPool['pool'] = GeneticAlgorithmCtor(strategyPool.config);
   if (evolve) {
-    console.log(">>>>>>>>>Evolving")
+//    console.log(">>>>>>>>>Evolving")
     strategyPool['pool'].evolve();
   }
 });
@@ -741,7 +741,7 @@ let simulateGeneration = () => {
 
     results = results.filter(function(r) {
       if (r) {
-	       r.selector = r.selector.normalized;
+        r.selector = r.selector.normalized;
         if (r.fitness > FITNESS_CUTOFF) {
           return !!r;
         } else {
@@ -753,6 +753,7 @@ let simulateGeneration = () => {
     let poolData = {};
     selectedStrategies.forEach(function(v) {
       data = pools[v]['pool'].population();
+
       var deathCount = 0;
       data = data.filter(function(r) {
         if (r.sim.fitness > FITNESS_CUTOFF) {
@@ -777,12 +778,16 @@ let simulateGeneration = () => {
         }
       })
 
+      // console.log(">>>>>> POOL DATA:" + pools[v]['pool'].population())
+      // console.log(">>>>>> DATA:" + poolData[v])
+
       // repopulate for each death
       for (var i = 1; i <= deathCount; i++) {
         console.log("Creating a new individual")
         population.push(Phenotypes.create(strategies[v]));
       }  
       pools[v]['config'].population = population;
+
 
     });
 
@@ -813,7 +818,7 @@ let simulateGeneration = () => {
 
 	          let best = pools[v]['pool'].best();
 
-	          if(best.sim.length > 0){
+	          if(best.sim.fitness > 0){
 	            console.log(`\t(${v}) Sim Fitness ${best.sim.fitness}, VS Buy and Hold: ${best.sim.vsBuyHold} End Balance: ${best.sim.endBalance}, Wins/Losses ${best.sim.wins}/${best.sim.losses}.`);
 
 	          } else {
@@ -829,7 +834,7 @@ let simulateGeneration = () => {
 
 	          console.log(bestCommand + '\n');
 
-	          if (best.sim.length > 0) {
+	          if (best.sim.fitness > 0) {
 	            Export.best(best, dataJSON);
 	          }            
 

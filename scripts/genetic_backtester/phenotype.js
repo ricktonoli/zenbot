@@ -44,7 +44,7 @@ module.exports = {
   },
 
   mutation: function(oldPhenotype, strategy) {
-    console.log(">>>>>>>>Mutating")
+ //   console.log(">>>>>>>>Mutating")
     var r = module.exports.create(strategy);
     for (var k in oldPhenotype) {
       if (k === 'sim') continue;
@@ -55,7 +55,7 @@ module.exports = {
   },
 
   crossover: function(phenotypeA, phenotypeB, strategy) {
-    console.log(">>>>>>>>>Crossover")
+//    console.log(">>>>>>>>>Crossover")
 
     var p1 = {};
     var p2 = {};
@@ -82,7 +82,7 @@ module.exports = {
 
   competition: function(phenotypeA, phenotypeB) {
     // TODO: Refer to genetic algorithm documentation on how to improve this with diverstiy
-    console.log(">>>>>>>>Competing")
+//    console.log(">>>>>>>>Competing")
     return module.exports.fitness(phenotypeA) >= module.exports.fitness(phenotypeB);
   }
 };
