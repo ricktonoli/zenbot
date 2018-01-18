@@ -52,7 +52,7 @@ module.exports = {
       var v = oldPhenotype[k];
       r[k] = (Math.random() < PROPERTY_MUTATION_CHANCE) ? r[k] : oldPhenotype[k];
     }
-    console.log(">>>>>> POST MUTATION" + JSON.stringify(r))
+    //console.log(">>>>>> POST MUTATION" + JSON.stringify(r))
     return r;
   },
 
