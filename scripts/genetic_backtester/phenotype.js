@@ -6,9 +6,13 @@
 
 let PROPERTY_MUTATION_CHANCE = 0.30;
 let PROPERTY_CROSSOVER_CHANCE = 0.50;
+let SIMILARITY_PERCETANGE = 10;
+let CREATE_SIMILAR_MUTATION_CHANCE_INCREASE = 2;
+let MUTATE_SIMILAR_FITNESS_THRESHOLD = 0.5;
 
 module.exports = {
   create: function(strategy) {
+    // console.log(">>>>>>>>Creating a new phenotype")
     var r = {};
     for (var k in strategy) {
       var v = strategy[k];
@@ -43,16 +47,63 @@ module.exports = {
     return r;
   },
 
+  // Creates a phenotype with traits within numeric traits a certain percentage of supplied one
+  createSimilar: function(strategy, phenotype, percentageSimilarity) {
+    console.log(">>>>>>>>Creating a variant phenotype")
+    var r = {};
+
+    for (var trait in phenotype) {
+      if (trait === 'sim') continue;
+      var value = phenotype[trait]
+      var type = strategy[trait].type
+      var direction = Math.random() >= 0.5?1:-1
+
+      if (type === 'int' || type === 'int0' || type === 'intfactor') {
+        value = parseInt(value) + parseInt(direction*parseInt(value)*parseFloat(percentageSimilarity/100))
+      } else if (type === 'float') {
+        value = parseFloat(value) + parseFloat(direction*parseFloat(value)*parseFloat(percentageSimilarity/100))
+      } else if (type === 'period_length') {
+        s = parseInt(value) + parseInt(direction*parseInt(value)*parseFloat(percentageSimilarity/100))
+        s < strategy[trait].min?s = strategy[trait].min:s
+        s > strategy[trait].max?strategy[trait].max:s
+        value = s + strategy[trait].period_length
+      } else if (type === 'makertaker') {
+        r[trait] = (Math.random() > 0.5) ? 'maker' : 'taker'
+        return r
+      } else if (type === 'sigmoidtanhrelu') {
+        var items = ['sigmoid', 'tanh', 'relu']
+        var index = Math.floor(Math.random() * items.length)
+        r[trait] = items[index]
+        return r
+      }
+
+      value < strategy[trait].min?value = strategy[trait].min:value
+      value > strategy[trait].max?strategy[trait].max:value
+
+      r[trait] = value
+    }
+
+    return r;
+  },
+
   mutation: function(oldPhenotype, strategy) {
-    // console.log(">>>>>>>>Mutating")
-    // console.log(">>>>>>>PHENOTYPE" + JSON.stringify(oldPhenotype))
+    // console.log('>>>>>>>>Mutating')
+    // console.log('>>>>>>>BEFORE' + JSON.stringify(oldPhenotype))
+    var mutationChance = PROPERTY_MUTATION_CHANCE
     var r = module.exports.create(strategy);
+    if (module.exports.fitness(oldPhenotype) > MUTATE_SIMILAR_FITNESS_THRESHOLD) {
+      console.log('-------->Mutating a similar rather than a new')
+      r = module.exports.createSimilar(strategy, oldPhenotype, SIMILARITY_PERCETANGE)
+      mutationChance = mutationChance * CREATE_SIMILAR_MUTATION_CHANCE_INCREASE
+    }
+
     for (var k in oldPhenotype) {
       if (k === 'sim') continue;
       var v = oldPhenotype[k];
-      r[k] = (Math.random() < PROPERTY_MUTATION_CHANCE) ? r[k] : oldPhenotype[k];
+      r[k] = (Math.random() < mutationChance) ? r[k] : oldPhenotype[k];
     }
-    //console.log(">>>>>> POST MUTATION" + JSON.stringify(r))
+    // console.log(">>>>>> AFTER" + JSON.stringify(r))
+
     return r;
   },
 
@@ -85,8 +136,8 @@ module.exports = {
   competition: function(phenotypeA, phenotypeB) {
     // TODO: Refer to genetic algorithm documentation on how to improve this with diverstiy
     // console.log(">>>>> A, fitness " + module.exports.fitness(phenotypeA) + " competing against B, fitness " + module.exports.fitness(phenotypeB));
-    // console.log(">>>>>>>PHENOTYPEA" + JSON.stringify(phenotypeA))
-    // console.log(">>>>>>>PHENOTYPEB" + JSON.stringify(phenotypeB))
+    // console.log(">>>>>>>PHENOTYPEA " + JSON.stringify(phenotypeA))
+    // console.log(">>>>>>>PHENOTYPEB " + JSON.stringify(phenotypeB))
 
     return module.exports.fitness(phenotypeA) >= module.exports.fitness(phenotypeB);
   }

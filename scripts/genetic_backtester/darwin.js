@@ -296,9 +296,9 @@ let strategies = {
     markdown_buy_pct: RangeFloat(0, 3),
     markup_sell_pct: RangeFloat(0, 3),
     order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 30),
-    buy_stop_pct: Range0(1, 30),
-    profit_stop_enable_pct: Range0(1, 20),
+    sell_stop_pct: Range(1, 30),
+    buy_stop_pct: Range(1, 30),
+    profit_stop_enable_pct: Range(1, 20),
     profit_stop_pct: Range(1,20),
 
   // -- strategy
@@ -328,7 +328,7 @@ let strategies = {
   },
   cci_srsi: {
     // -- common
-    period_length: RangePeriod(1, 120, 'm'),
+    period_length: RangePeriod(5, 15, 'm'),
     min_periods: Range(1, 200),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
@@ -344,8 +344,8 @@ let strategies = {
     srsi_periods: Range(1, 200),
     srsi_k: Range(1, 50),
     srsi_d: Range(1, 50),
-    oversold_rsi: Range(1, 100),
-    overbought_rsi: Range(1, 100),
+    oversold_rsi: Range(1, 20),
+    overbought_rsi: Range(80, 100),
     oversold_cci: Range(-100, 100),
     overbought_cci: Range(1, 100),
     constant: RangeFloat(0.001, 0.05)
@@ -564,20 +564,20 @@ let strategies = {
   },
   dema: {
     // -- common
-    period_length: RangePeriod(5, 120, 'm'),
-    min_periods: Range(5, 30),
+    period_length: RangePeriod(60, 60, 'm'),
+    min_periods: Range(1, 30),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     markup_pct: RangeFloat(0, 5),
     order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 40),
-    buy_stop_pct: Range0(1, 40),
-    profit_stop_enable_pct: Range0(1, 20),
+    sell_stop_pct: Range(1, 40),
+    buy_stop_pct: Range(1, 40),
+    profit_stop_enable_pct: Range(1, 20),
     profit_stop_pct: Range(1, 20),
 
     // -- strategy
     ema_short_period: Range(1, 20),
-    ema_long_period: Range(20, 100),
+    ema_long_period: Range(21, 70),
     signal_period: Range(1, 20),
     up_trend_threshold: Range(0, 50),
     down_trend_threshold: Range(0, 50),
@@ -628,6 +628,7 @@ simArgs += ` --filename none`;
 let strategyName = (argv.use_strategies) ? argv.use_strategies : 'all';
 let populationFileName = (argv.population_data) ? argv.population_data : null;
 let populationSize = (argv.population) ? argv.population : 100;
+let fitnessCutoff = (argv.fitness) ? argv.fitness : FITNESS_CUTOFF 
 
 console.log(`Backtesting strategy ${strategyName} ...`);
 console.log(`Creating population of ${populationSize} ...\n`);
@@ -661,10 +662,11 @@ selectedStrategies.forEach(function(v) {
   };
 
   strategyPool['pool'] = GeneticAlgorithmCtor(strategyPool.config);
-  if (evolve) {
-//    console.log(">>>>>>>>>Evolving")
-    strategyPool['pool'].evolve();
-  }
+
+  // if (evolve) {
+  //   console.log(">>>>>>>>>Evolving")
+  //   strategyPool['pool'].evolve();
+  // }
 });
 
 var generateCommandParams = input => {
@@ -742,7 +744,7 @@ let simulateGeneration = () => {
     results = results.filter(function(r) {
       if (r) {
         r.selector = r.selector.normalized;
-        if (r.fitness > FITNESS_CUTOFF) {
+        if (meetsMinimumViability(r)) {
           return !!r;
         } else {
           return false;
@@ -750,27 +752,29 @@ let simulateGeneration = () => {
       }
     });
 
+    console.log(JSON.stringify(results))
+
     let poolData = {};
     selectedStrategies.forEach(function(v) {
       data = pools[v]['pool'].population();
 
-      var deathCount = 0;
       data = data.filter(function(r) {
-        if (r.sim.fitness > FITNESS_CUTOFF) {
-          console.log("Keeping candidate with fitness of " + r.sim.fitness)
+        if (meetsMinimumViability(r)) {
+          console.log("Keeping candidate")
           return !!r
         } else {
-          console.log("Eliminating unfit candidate with fitness of " + r.sim.fitness)
+          console.log("Eliminating unfit candidate")
           return false;
         }
       })
 
       poolData[v] = data;
+      var deathCount = 0;
 
       // trim unfit individuals from the base population
       population = pools[v]['config'].population;
       population = population.filter(function(r) {
-        if (r.sim.fitness > FITNESS_CUTOFF) {
+        if (meetsMinimumViability(r)) {
           return !!r
         } else {
           deathCount++
@@ -783,7 +787,7 @@ let simulateGeneration = () => {
 
       // repopulate for each death
       for (var i = 1; i <= deathCount; i++) {
-        console.log("Creating a new individual")
+//        console.log("Creating a new individual")
         population.push(Phenotypes.create(strategies[v]));
       }  
       pools[v]['config'].population = population;
@@ -837,7 +841,6 @@ let simulateGeneration = () => {
 	          if (best.sim && best.sim.fitness > 0) {
 	            Export.best(best, dataJSON);
 	          }            
-
 	          let nextGen = pools[v]['pool'].evolve();
 	        });
           simulateGeneration();
@@ -852,3 +855,21 @@ let simulateGeneration = () => {
 
 simulateGeneration();
 
+// Some basic minimum fitness criteria to accept candidate in pool.
+// Eliminates 0 wins, low fitness and no trades
+function meetsMinimumViability(candidate) {
+  result = true
+  if (candidate.sim) {
+    result = result && parseFloat(candidate.sim.fitness) > fitnessCutoff
+    result = result && parseInt(candidate.sim.wins) > 0
+    result = result && parseFloat(candidate.sim.frequency) > 0
+  } else if (candidate.fitness) {
+    console.log(JSON.stringify(candidate))
+    result = result && parseFloat(candidate.fitness) > fitnessCutoff
+    result = result && parseInt(candidate.wins) > 0
+    result = result && parseFloat(candidate.frequency) > 0
+  } else {
+    result = false
+  }
+  return result
+}
