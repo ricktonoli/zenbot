@@ -6,9 +6,9 @@
 
 let PROPERTY_MUTATION_CHANCE = 0.30;
 let PROPERTY_CROSSOVER_CHANCE = 0.50;
-let SIMILARITY_PERCETANGE = 10;
-let CREATE_SIMILAR_MUTATION_CHANCE_INCREASE = 2;
-let MUTATE_SIMILAR_FITNESS_THRESHOLD = 0.5;
+let SIMILARITY_PERCETANGE = 15;
+let CREATE_SIMILAR_MUTATION_CHANCE_INCREASE = 1.5;
+let MUTATE_SIMILAR_FITNESS_THRESHOLD = 1.0;
 
 module.exports = {
   create: function(strategy) {
@@ -126,9 +126,11 @@ module.exports = {
     if (typeof phenotype.sim === 'undefined') return 0;
 
     var vsBuyHoldRate = (phenotype.sim.vsBuyHold / 50);
-    var wlRatio = phenotype.sim.wins - phenotype.sim.losses
+    var wlRatio = phenotype.sim.wins - phenotype.sim.losses;
     var wlRatioRate = 1.0 / (1.0 + Math.pow(2.71828, (wlRatio*-1)));
-    var rate = vsBuyHoldRate * (wlRatioRate);
+    var frequency = phenotype.sim.frequency;
+
+    var rate = vsBuyHoldRate * wlRatioRate * frequency;
 
     return rate;
   },

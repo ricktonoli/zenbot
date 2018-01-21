@@ -352,8 +352,8 @@ let strategies = {
   },
   srsi_macd: {
     // -- common
-    period_length: RangePeriod(1, 120, 'm'),
-    min_periods: Range(1, 200),
+    period_length: RangePeriod(5, 15, 'm'),
+    min_periods: Range(1, 50),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
@@ -363,17 +363,17 @@ let strategies = {
     profit_stop_pct: Range(1,20),
 
     // -- strategy
-    rsi_periods: Range(1, 200),
-    srsi_periods: Range(1, 200),
-    srsi_k: Range(1, 50),
-    srsi_d: Range(1, 50),
-    oversold_rsi: Range(1, 100),
-    overbought_rsi: Range(1, 100),
+    rsi_periods: Range(5, 50),
+    srsi_periods: Range(5, 100),
+    srsi_k: Range(5, 50),
+    srsi_d: Range(5, 50),
+    oversold_rsi: Range(1, 20),
+    overbought_rsi: Range(80, 100),
     ema_short_period: Range(1, 20),
     ema_long_period: Range(20, 100),
     signal_period: Range(1, 20),
-    up_trend_threshold: Range(0, 20),
-    down_trend_threshold: Range(0, 20)
+    up_trend_threshold: Range(1, 20),
+    down_trend_threshold: Range(1, 20)
   },
   macd: {
     // -- common
@@ -564,7 +564,7 @@ let strategies = {
   },
   dema: {
     // -- common
-    period_length: RangePeriod(60, 60, 'm'),
+    period_length: RangePeriod(1, 60, 'm'),
     min_periods: Range(1, 30),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
@@ -576,9 +576,9 @@ let strategies = {
     profit_stop_pct: Range(1, 20),
 
     // -- strategy
-    ema_short_period: Range(1, 20),
-    ema_long_period: Range(21, 70),
-    signal_period: Range(1, 20),
+    ema_short_period: Range(1, 15),
+    ema_long_period: Range(15, 80),
+    signal_period: Range(5, 20),
     up_trend_threshold: Range(0, 50),
     down_trend_threshold: Range(0, 50),
     overbought_rsi_periods: Range(1, 30),
@@ -864,7 +864,6 @@ function meetsMinimumViability(candidate) {
     result = result && parseInt(candidate.sim.wins) > 0
     result = result && parseFloat(candidate.sim.frequency) > 0
   } else if (candidate.fitness) {
-    console.log(JSON.stringify(candidate))
     result = result && parseFloat(candidate.fitness) > fitnessCutoff
     result = result && parseInt(candidate.wins) > 0
     result = result && parseFloat(candidate.frequency) > 0
