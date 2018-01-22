@@ -6,11 +6,11 @@ fi
 
 cd ~/zenbot
 
-if [[ -f "strategies/cexio.$1-USD/$3/$2_data.json" ]]; then
+if [[ -f "strategies/$1/$3/$2.conf" ]]; then
  echo "Staring live trading in manual mode"
- echo "Executing: zenbot trade --manual cexio.$1-USD --sell_pct 100 --buy_pct 100 --conf strategies/cexio.$1-USD/$3/$2.conf "
- /usr/bin/screen -S Live$1 -d -m bash -c "zenbot trade --manual cexio.$1-USD --sell_pct 100 --buy_pct 100 --conf strategies/cexio.$1-USD/$3/$2.conf "
+ echo "Executing: zenbot trade --manual $1 --sell_pct 100 --buy_pct 100 --conf strategies/$1/$3/$2.conf "
+ /usr/bin/screen -S Live$1 -d -m bash -c "zenbot trade --manual $1 --sell_pct 100 --buy_pct 100 --conf strategies/$1/$3/$2.conf "
 # /usr/bin/screen -r Live$1
 else 
-  echo "No config file found at strategies/cexio.$1-USD/$3/$2_data.json"
+  echo "No config file found at strategies/$1/$3/$2_data.json"
 fi

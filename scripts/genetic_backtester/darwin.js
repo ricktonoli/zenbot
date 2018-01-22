@@ -6,11 +6,6 @@
  *
  * Example: ./darwin.js --selector="bitfinex.ETH-USD" --days="10" --currency_capital="5000" --use_strategies="all | macd,trend_ema,etc" --population="101" --population_data="simulations/generation_data_NUMBERS_gen_X.json"
  */
-
-Array.prototype.pushArray = function(arr) {
-    this.push.apply(this, arr);
-};
-
 let shell = require('shelljs');
 let parallel = require('run-parallel-limit');
 let json2csv = require('json2csv');
@@ -37,33 +32,13 @@ let OVERBOUGHT_RSI_MAX = 90;
 
 let OVERSOLD_RSI_PERIODS_MIN = 3;
 let OVERSOLD_RSI_PERIODS_MAX = 20;
-let OVERBOUGHT_RSI_PERIODS_MIN = 3;
-let OVERBOUGHT_RSI_PERIODS_MAX = 20;
 
 //let NEUTRAL_RATE_MIN = 10;
 //let NEUTRAL_RATE_MAX = 10;
 
 //let NEUTRAL_RATE_AUTO = false;
 
-// minimum period minutes
-let PERIOD_MIN = 5;
-let PERIOD_MAX = 90;
-
-let MIN_PERIODS_MIN = 12;
-let MIN_PERIODS_MAX = 50;
-
-let PROFIT_MAX_PCT = 40;
-let PROFIT_MIN_PCT = 15
-let PROFIT_STOP_LOSS_PCT_MAX = 5;
-let PROFIT_STOP_LOSS_PCT_MIN = 1;
-
-let BUY_STOP_PCT_MAX = 20;
-let BUY_STOP_PCT_MIN = 1;
-
-let SELL_STOP_PCT_MAX = 20;
-let SELL_STOP_PCT_MIN = 1;
-
-let FITNESS_CUTOFF = 0.5;
+let FITNESS_CUTOFF = 0.5;  // Do not allow phenotypes lower than this fitness
 
 let iterationCount = 0;
 
@@ -130,7 +105,6 @@ let runUpdate = (days, selector) => {
     async: false
   });
 };
-
 
 
 let processOutput = output => {
@@ -564,11 +538,10 @@ let strategies = {
   },
   dema: {
     // -- common
-    period_length: RangePeriod(1, 60, 'm'),
+    period_length: RangePeriod(5, 60, 'm'),
     min_periods: Range(1, 30),
-    markdown_buy_pct: RangeFloat(-1, 5),
-    markup_sell_pct: RangeFloat(-1, 5),
-    markup_pct: RangeFloat(0, 5),
+    markdown_buy_pct: RangeFloat(0, 0),
+    markup_sell_pct: RangeFloat(0, 0),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range(1, 40),
     buy_stop_pct: Range(1, 40),
@@ -576,8 +549,8 @@ let strategies = {
     profit_stop_pct: Range(1, 20),
 
     // -- strategy
-    ema_short_period: Range(1, 15),
-    ema_long_period: Range(15, 80),
+    ema_short_period: Range(1, 20),
+    ema_long_period: Range(20, 80),
     signal_period: Range(5, 20),
     up_trend_threshold: Range(0, 50),
     down_trend_threshold: Range(0, 50),
@@ -782,12 +755,8 @@ let simulateGeneration = () => {
         }
       })
 
-      // console.log(">>>>>> POOL DATA:" + pools[v]['pool'].population())
-      // console.log(">>>>>> DATA:" + poolData[v])
-
       // repopulate for each death
       for (var i = 1; i <= deathCount; i++) {
-//        console.log("Creating a new individual")
         population.push(Phenotypes.create(strategies[v]));
       }  
       pools[v]['config'].population = population;

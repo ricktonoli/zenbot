@@ -6,13 +6,13 @@
 
 let PROPERTY_MUTATION_CHANCE = 0.30;
 let PROPERTY_CROSSOVER_CHANCE = 0.50;
-let SIMILARITY_PERCETANGE = 15;
-let CREATE_SIMILAR_MUTATION_CHANCE_INCREASE = 1.5;
-let MUTATE_SIMILAR_FITNESS_THRESHOLD = 1.0;
+
+let SIMILARITY_PERCENTAGE = 15;   // percentage to mutate numeric trait of phenotype for similar mutation
+let CREATE_SIMILAR_MUTATION_CHANCE_INCREASE = 1.8;  // factor to multiply mutation chance by for similar mutation
+let MUTATE_SIMILAR_FITNESS_THRESHOLD = 1.0; // fitness at which similar mutation takes over from random mutation
 
 module.exports = {
   create: function(strategy) {
-    // console.log(">>>>>>>>Creating a new phenotype")
     var r = {};
     for (var k in strategy) {
       var v = strategy[k];
@@ -47,9 +47,8 @@ module.exports = {
     return r;
   },
 
-  // Creates a phenotype with traits within numeric traits a certain percentage of supplied one
-  createSimilar: function(strategy, phenotype, percentageSimilarity) {
-    console.log(">>>>>>>>Creating a variant phenotype")
+  // Creates a phenotype with traits within a percentage of numeric traits of supplied one
+  createSimilar: function(strategy, phenotype, percentage) {
     var r = {};
 
     for (var trait in phenotype) {
@@ -59,11 +58,11 @@ module.exports = {
       var direction = Math.random() >= 0.5?1:-1
 
       if (type === 'int' || type === 'int0' || type === 'intfactor') {
-        value = parseInt(value) + parseInt(direction*parseInt(value)*parseFloat(percentageSimilarity/100))
+        value = parseInt(value) + parseInt(direction*parseInt(value)*parseFloat(percentage/100))
       } else if (type === 'float') {
-        value = parseFloat(value) + parseFloat(direction*parseFloat(value)*parseFloat(percentageSimilarity/100))
+        value = parseFloat(value) + parseFloat(direction*parseFloat(value)*parseFloat(percentage/100))
       } else if (type === 'period_length') {
-        s = parseInt(value) + parseInt(direction*parseInt(value)*parseFloat(percentageSimilarity/100))
+        s = parseInt(value) + parseInt(direction*parseInt(value)*parseFloat(percentage/100))
         s < strategy[trait].min?s = strategy[trait].min:s
         s > strategy[trait].max?strategy[trait].max:s
         value = s + strategy[trait].period_length
@@ -87,13 +86,10 @@ module.exports = {
   },
 
   mutation: function(oldPhenotype, strategy) {
-    // console.log('>>>>>>>>Mutating')
-    // console.log('>>>>>>>BEFORE' + JSON.stringify(oldPhenotype))
     var mutationChance = PROPERTY_MUTATION_CHANCE
     var r = module.exports.create(strategy);
     if (module.exports.fitness(oldPhenotype) > MUTATE_SIMILAR_FITNESS_THRESHOLD) {
-      console.log('-------->Mutating a similar rather than a new')
-      r = module.exports.createSimilar(strategy, oldPhenotype, SIMILARITY_PERCETANGE)
+      r = module.exports.createSimilar(strategy, oldPhenotype, SIMILARITY_PERCENTAGE)
       mutationChance = mutationChance * CREATE_SIMILAR_MUTATION_CHANCE_INCREASE
     }
 
@@ -102,14 +98,10 @@ module.exports = {
       var v = oldPhenotype[k];
       r[k] = (Math.random() < mutationChance) ? r[k] : oldPhenotype[k];
     }
-    // console.log(">>>>>> AFTER" + JSON.stringify(r))
-
     return r;
   },
 
   crossover: function(phenotypeA, phenotypeB, strategy) {
-    // console.log(">>>>>>>>>Crossover")
-
     var p1 = {};
     var p2 = {};
     for (var k in strategy) {
@@ -122,25 +114,16 @@ module.exports = {
   },
 
   fitness: function(phenotype) {
-
     if (typeof phenotype.sim === 'undefined') return 0;
-
     var vsBuyHoldRate = (phenotype.sim.vsBuyHold / 50);
     var wlRatio = phenotype.sim.wins - phenotype.sim.losses;
     var wlRatioRate = 1.0 / (1.0 + Math.pow(2.71828, (wlRatio*-1)));
     var frequency = phenotype.sim.frequency;
-
     var rate = vsBuyHoldRate * wlRatioRate * frequency;
-
     return rate;
   },
 
   competition: function(phenotypeA, phenotypeB) {
-    // TODO: Refer to genetic algorithm documentation on how to improve this with diverstiy
-    // console.log(">>>>> A, fitness " + module.exports.fitness(phenotypeA) + " competing against B, fitness " + module.exports.fitness(phenotypeB));
-    // console.log(">>>>>>>PHENOTYPEA " + JSON.stringify(phenotypeA))
-    // console.log(">>>>>>>PHENOTYPEB " + JSON.stringify(phenotypeB))
-
     return module.exports.fitness(phenotypeA) >= module.exports.fitness(phenotypeB);
   }
 };
