@@ -12,5 +12,5 @@ if [[ -f "strategies/$1/$3/$2.conf" ]]; then
  /usr/bin/screen -S Live$1 -d -m bash -c "zenbot trade --manual $1 --sell_pct 100 --buy_pct 100 --conf strategies/$1/$3/$2.conf "
 # /usr/bin/screen -r Live$1
 else 
-  echo "No config file found at strategies/$1/$3/$2_data.json"
+  echo "No config file found at strategies/$1/$3/$2.conf"
 fi
