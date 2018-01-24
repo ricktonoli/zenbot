@@ -10,6 +10,7 @@ let PROPERTY_CROSSOVER_CHANCE = 0.50
 let SIMILARITY_PERCENTAGE = 15   // percentage to mutate numeric trait of phenotype for similar mutation
 let CREATE_SIMILAR_MUTATION_CHANCE_INCREASE = 1.8  // factor to multiply mutation chance by for similar mutation
 let MUTATE_SIMILAR_FITNESS_THRESHOLD = 1.0 // fitness at which similar mutation takes over from random mutation
+let CHANCE_SIMILAR_MUTATION_BECOMES_RANDOM = 0.2 // the chance a "similar" mutation above actually becomes random, to add some randomness in the late game
 
 module.exports = {
   create: function(strategy) {
@@ -90,7 +91,7 @@ module.exports = {
   mutation: function(oldPhenotype, strategy) {
     var mutationChance = PROPERTY_MUTATION_CHANCE
     var r = module.exports.create(strategy)
-    if (module.exports.fitness(oldPhenotype) > MUTATE_SIMILAR_FITNESS_THRESHOLD) {
+    if (module.exports.fitness(oldPhenotype) > MUTATE_SIMILAR_FITNESS_THRESHOLD && (Math.random >= CHANCE_SIMILAR_MUTATION_BECOMES_RANDOM)) {
       r = module.exports.createSimilar(strategy, oldPhenotype, SIMILARITY_PERCENTAGE)
       mutationChance = mutationChance * CREATE_SIMILAR_MUTATION_CHANCE_INCREASE
     }
@@ -122,8 +123,8 @@ module.exports = {
     var vsBuyHoldRate = (phenotype.sim.vsBuyHold / 50)
     var wlRatio = phenotype.sim.wins - phenotype.sim.losses
     var wlRatioRate = 1.0 / (1.0 + Math.pow(2.71828, (wlRatio*-1)))
-    var frequency = phenotype.sim.frequency
-    var rate = vsBuyHoldRate * wlRatioRate * frequency
+    var frequencyRate = 1.0 / (1.0 + Math.pow(2.71828, (phenotype.sim.frequency*-1)))
+    var rate = vsBuyHoldRate * wlRatioRate * frequencyRate
     return rate
   },
 

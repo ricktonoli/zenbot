@@ -262,9 +262,9 @@ let RangeBoolean = () => {
 
 let strategies = {
   bollinger: {
-    period_length: RangePeriod(1, 60, 'm'),
-    markdown_buy_pct: RangeFloat(-1, 5),
-    markup_sell_pct: RangeFloat(-1, 5),
+    period_length: RangePeriod(5, 5, 'm'),
+    markdown_buy_pct: RangeFloat(-1, 3),
+    markup_sell_pct: RangeFloat(-1, 3),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
@@ -272,10 +272,10 @@ let strategies = {
     profit_stop_pct: Range(1,20),
 
     // -- strategy
-    bollinger_size: Range(1, 40),
+    bollinger_size: Range(10, 20),
     bollinger_time: RangeFloat(1,6),
-    bollinger_upper_bound_pct: RangeFloat(-1, 30),
-    bollinger_lower_bound_pct: RangeFloat(-1, 30)
+    bollinger_upper_bound_pct: RangeFloat(-1, 20),
+    bollinger_lower_bound_pct: RangeFloat(-1, 20)
   },
   trend_bollinger: {
     period_length: RangePeriod(1, 60, 'm'),
@@ -353,8 +353,8 @@ let strategies = {
     srsi_periods: Range(5, 100),
     srsi_k: Range(5, 50),
     srsi_d: Range(5, 50),
-    oversold_rsi: Range(1, 20),
-    overbought_rsi: Range(80, 100),
+    oversold_rsi: Range(20, 20),
+    overbought_rsi: Range(80, 80),
     ema_short_period: Range(1, 20),
     ema_long_period: Range(20, 100),
     signal_period: Range(1, 20),
@@ -363,7 +363,7 @@ let strategies = {
   },
   macd: {
     // -- common
-    period_length: RangePeriod(1, 120, 'm'),
+    period_length: RangePeriod(5, 5, 'm'),
     min_periods: Range(1, 200),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
@@ -377,10 +377,10 @@ let strategies = {
     ema_short_period: Range(1, 20),
     ema_long_period: Range(20, 100),
     signal_period: Range(1, 20),
-    up_trend_threshold: Range(0, 50),
-    down_trend_threshold: Range(0, 50),
-    overbought_rsi_periods: Range(1, 50),
-    overbought_rsi: Range(20, 100)
+    up_trend_threshold: Range(1, 50),
+    down_trend_threshold: Range(1, 50),
+    overbought_rsi_periods: Range(1, 20),
+    overbought_rsi: Range(80, 100)
   },
   neural: {
     // -- common
@@ -550,10 +550,10 @@ let strategies = {
   },
   dema: {
     // -- common
-    period_length: RangePeriod(5, 60, 'm'),
+    period_length: RangePeriod(10, 60, 'm'),
     min_periods: Range(1, 30),
-    markdown_buy_pct: RangeFloat(-1, 1),
-    markup_sell_pct: RangeFloat(-1, 1),
+    markdown_buy_pct: RangeFloat(-1, 2),
+    markup_sell_pct: RangeFloat(-1, 2),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range(1, 40),
     buy_stop_pct: Range(1, 40),
@@ -561,14 +561,14 @@ let strategies = {
     profit_stop_pct: Range(1, 20),
 
     // -- strategy
-    ema_short_period: Range(1, 20),
-    ema_long_period: Range(20, 80),
-    signal_period: Range(5, 20),
+    ema_short_period: Range(1, 5),
+    ema_long_period: Range(6, 50),
+    signal_period: Range(1, 20),
     up_trend_threshold: Range(0, 50),
     down_trend_threshold: Range(0, 50),
     overbought_rsi_periods: Range(1, 30),
     overbought_rsi: Range(70, 95),
-    noise_level_pct: Range(0, 5)
+    noise_level_pct: Range(1, 5)
   },
   wavetrend: {
     // -- common
