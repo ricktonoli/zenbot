@@ -6,163 +6,154 @@
  *
  * Example: ./darwin.js --selector="bitfinex.ETH-USD" --days="10" --currency_capital="5000" --use_strategies="all | macd,trend_ema,etc" --population="101" --population_data="simulations/generation_data_NUMBERS_gen_X.json"
  */
-let shell = require('shelljs');
-let parallel = require('run-parallel-limit');
-let json2csv = require('json2csv');
-let roundp = require('round-precision');
-let GeneticAlgorithmCtor = require('geneticalgorithm');
-let StripAnsi = require('strip-ansi');
-let moment = require('moment');
-let fs = require('fs');
+let shell = require('shelljs')
+let parallel = require('run-parallel-limit')
+let json2csv = require('json2csv')
+let roundp = require('round-precision')
+let GeneticAlgorithmCtor = require('geneticalgorithm')
+let StripAnsi = require('strip-ansi')
+let moment = require('moment')
+let fs = require('fs')
 
-let Phenotypes = require('./phenotype.js');
-let Export = require('./export.js');
+let Phenotypes = require('./phenotype.js')
+let Export = require('./export.js')
 
-let VERSION = 'Zenbot 4 Genetic Backtester v0.2';
+let VERSION = 'Zenbot 4 Genetic Backtester v0.2'
 
-let PARALLEL_LIMIT = (process.env.PARALLEL_LIMIT && +process.env.PARALLEL_LIMIT) || require('os').cpus().length;
+let PARALLEL_LIMIT = (process.env.PARALLEL_LIMIT && +process.env.PARALLEL_LIMIT) || require('os').cpus().length
 
-let TREND_EMA_MIN = 10;
-let TREND_EMA_MAX = 100;
+let TREND_EMA_MIN = 10
+let TREND_EMA_MAX = 100
 
-let OVERSOLD_RSI_MIN = 20;
-let OVERSOLD_RSI_MAX = 25;
-let OVERBOUGHT_RSI_MIN = 70;
-let OVERBOUGHT_RSI_MAX = 90;
+let OVERSOLD_RSI_MIN = 20
+let OVERSOLD_RSI_MAX = 25
+let OVERBOUGHT_RSI_MIN = 70
+let OVERBOUGHT_RSI_MAX = 90
 
-let OVERSOLD_RSI_PERIODS_MIN = 3;
-let OVERSOLD_RSI_PERIODS_MAX = 20;
+let OVERSOLD_RSI_PERIODS_MIN = 3
+let OVERSOLD_RSI_PERIODS_MAX = 20
 
-//let NEUTRAL_RATE_MIN = 10;
-//let NEUTRAL_RATE_MAX = 10;
+let NEUTRAL_RATE_MIN = 10
+let NEUTRAL_RATE_MAX = 10
 
-//let NEUTRAL_RATE_AUTO = false;
+let NEUTRAL_RATE_AUTO = false
 
-let FITNESS_CUTOFF = 0.5;  // Do not allow phenotypes lower than this fitness
+let FITNESS_CUTOFF = 0.5  // Do not allow phenotypes lower than this fitness
 
-let iterationCount = 0;
+let iterationCount = 0
+
 
 let runCommand = (taskStrategyName, phenotype, cb) => {
-  let commonArgs = `--strategy=${taskStrategyName} --period_length=${phenotype.period_length} --min_periods=${phenotype.min_periods}  --markdown_buy_pct=${phenotype.markdown_buy_pct} --markup_sell_pct=${phenotype.markup_sell_pct} --order_type=${phenotype.order_type} --sell_stop_pct=${phenotype.sell_stop_pct} --buy_stop_pct=${phenotype.buy_stop_pct} --profit_stop_enable_pct=${phenotype.profit_stop_enable_pct} --profit_stop_pct=${phenotype.profit_stop_pct}`;
-  let strategyArgs = {
-    bollinger: `--bollinger_size=${phenotype.bollinger_size} --bollinger_time=${phenotype.bollinger_time} --bollinger_upper_bound_pct=${phenotype.bollinger_upper_bound_pct} --bollinger_lower_bound_pct=${phenotype.bollinger_lower_bound_pct}`,
-    crossover_vwap: `--emalen1=${phenotype.emalen1} --smalen1=${phenotype.smalen1} --smalen2=${phenotype.smalen2} --vwap_length=${phenotype.vwap_length} --vwap_max=${phenotype.vwap_max}`,
-    trendline: `--lastpoints=${phenotype.lastpoints}  --avgpoints=${phenotype.avgpoints} --lastpoints2=${phenotype.lastpoints2} --avgpoints2=${phenotype.avgpoints2} --markdown_buy_pct=${phenotype.markdown_buy_pct} --markup_sell_pct=${phenotype.markup_sell_pct}`,
-    cci_srsi: `--cci_periods=${phenotype.rsi_periods} --rsi_periods=${phenotype.srsi_periods} --srsi_periods=${phenotype.srsi_periods} --srsi_k=${phenotype.srsi_k} --srsi_d=${phenotype.srsi_d} --oversold_rsi=${phenotype.oversold_rsi} --overbought_rsi=${phenotype.overbought_rsi} --oversold_cci=${phenotype.oversold_cci} --overbought_cci=${phenotype.overbought_cci} --constant=${phenotype.constant}`,
-    srsi_macd: `--rsi_periods=${phenotype.rsi_periods} --srsi_periods=${phenotype.srsi_periods} --srsi_k=${phenotype.srsi_k} --srsi_d=${phenotype.srsi_d} --oversold_rsi=${phenotype.oversold_rsi} --overbought_rsi=${phenotype.overbought_rsi} --ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --signal_period=${phenotype.signal_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold}`,
-    macd: `--ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --signal_period=${phenotype.signal_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold} --overbought_rsi_periods=${phenotype.overbought_rsi_periods} --overbought_rsi=${phenotype.overbought_rsi}`,
-    neural: `--activation_1_type=${phenotype.activation_1_type} --neurons_1=${phenotype.neurons_1} --depth=${phenotype.depth} --momentum=${phenotype.momentum} --decay=${phenotype.decay} --min_predict=${phenotype.min_predict} --learns=${phenotype.learns}`,
-    rsi: `--rsi_periods=${phenotype.rsi_periods} --oversold_rsi=${phenotype.oversold_rsi} --overbought_rsi=${phenotype.overbought_rsi} --rsi_recover=${phenotype.rsi_recover} --rsi_drop=${phenotype.rsi_drop} --rsi_divisor=${phenotype.rsi_divisor}`,
-    sar: `--sar_af=${phenotype.sar_af} --sar_max_af=${phenotype.sar_max_af}`,
-    speed: `--baseline_periods=${phenotype.baseline_periods} --trigger_factor=${phenotype.trigger_factor}`,
-    trend_ema: `--trend_ema=${phenotype.trend_ema} --oversold_rsi=${phenotype.oversold_rsi} --oversold_rsi_periods=${phenotype.oversold_rsi_periods} --neutral_rate=auto`,
-    trust_distrust: `--sell_threshold=${phenotype.sell_threshold} --sell_threshold_max=${phenotype.sell_threshold_max} --sell_min=${phenotype.sell_min} --buy_threshold=${phenotype.buy_threshold} --buy_threshold_max=${phenotype.buy_threshold_max} --greed=${phenotype.greed}`,
-    ta_macd: `--ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --signal_period=${phenotype.signal_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold} --overbought_rsi_periods=${phenotype.overbought_rsi_periods} --overbought_rsi=${phenotype.overbought_rsi}`,
-    ta_ema: `--trend_ema=${phenotype.trend_ema} --oversold_rsi=${phenotype.oversold_rsi} --oversold_rsi_periods=${phenotype.oversold_rsi_periods} --neutral_rate=auto`,
-    dema: `--ema_short_period=${phenotype.ema_short_period} --ema_long_period=${phenotype.ema_long_period} --signal_period=${phenotype.signal_period} --up_trend_threshold=${phenotype.up_trend_threshold} --down_trend_threshold=${phenotype.down_trend_threshold} --overbought_rsi_periods=${phenotype.overbought_rsi_periods} --overbought_rsi=${phenotype.overbought_rsi} --noise_level_pct=${phenotype.noise_level_pct}`
-  };
+  var cmdArgs = Object.assign({}, phenotype)
+  cmdArgs.strategy = taskStrategyName
+  Object.assign(cmdArgs, simArgs)
 
-  let zenbot_cmd = process.platform === 'win32' ? 'zenbot.bat' : './zenbot.sh';
-  let command = `${zenbot_cmd} sim ${simArgs} ${commonArgs} ${strategyArgs[taskStrategyName]}`;
-  console.log(`[ ${iterationCount++}/${populationSize * selectedStrategies.length} ] ${command}`);
+  var selector = cmdArgs.selector
+  delete cmdArgs.selector
+  delete cmdArgs.sim
 
-  phenotype['sim'] = {};
+  let zenbot_cmd = process.platform === 'win32' ? 'zenbot.bat' : './zenbot.sh'
+  let command = `${zenbot_cmd} sim ${selector}`
+
+  for (const [ key, value ] of Object.entries(cmdArgs)) {
+    command += ` --${key}=${value}`
+  }
+
+  console.log(`[ ${iterationCount++}/${populationSize * selectedStrategies.length} ] ${command}`)
+
+  phenotype['sim'] = {}
 
   shell.exec(command, {
     silent: true,
     async: true
   }, (code, stdout, stderr) => {
     if (code) {
-      console.error(command);
-      console.error(stderr);
-      return cb(null, null);
+      console.error(command)
+      console.error(stderr)
+      return cb(null, null)
     }
 
-    let result = null;
+    let result = null
     try {
-      result = processOutput(stdout);
-      phenotype['sim'] = result;
-      result['fitness'] = Phenotypes.fitness(phenotype);
+      result = processOutput(stdout)
+      phenotype['sim'] = result
+      result['fitness'] = Phenotypes.fitness(phenotype)
     } catch (err) {
-      console.log(`Bad output detected`, err.toString());
-      console.log(stdout);
+      console.log('Bad output detected', err.toString())
+      console.log(stdout)
     }
 
-
-
-    cb(null, result);
-  });
-};
+    cb(null, result)
+  })
+}
 
 let runUpdate = (days, selector) => {
-  let zenbot_cmd = process.platform === 'win32' ? 'zenbot.bat' : './zenbot.sh';
-  let command = `${zenbot_cmd} backfill --days=${days} ${selector}`;
-  console.log(`Backfilling (might take some time) ...`);
-  console.log(command);
+  let zenbot_cmd = process.platform === 'win32' ? 'zenbot.bat' : './zenbot.sh'
+  let command = `${zenbot_cmd} backfill --days=${days} ${selector}`
+  console.log('Backfilling (might take some time) ...')
+  console.log(command)
 
   shell.exec(command, {
     silent: true,
     async: false
-  });
-};
-
+  })
+}
 
 let processOutput = output => {
-  let jsonRegexp = /(\{[\s\S]*?\})\send balance/g;
-  let endBalRegexp = /end balance: (\d+\.\d+) \(/g;
-  let buyHoldRegexp = /buy hold: (\d+\.\d+) \(/g;
-  let vsBuyHoldRegexp = /vs. buy hold: (-?\d+\.\d+)%/g;
-  let wlRegexp = /win\/loss: (\d+)\/(\d+)/g;
-  let errRegexp = /error rate: (.*)%/g;
+  let jsonRegexp = /(\{[\s\S]*?\})\send balance/g
+  let endBalRegexp = /end balance: (\d+\.\d+) \(/g
+  let buyHoldRegexp = /buy hold: (\d+\.\d+) \(/g
+  let vsBuyHoldRegexp = /vs. buy hold: (-?\d+\.\d+)%/g
+  let wlRegexp = /win\/loss: (\d+)\/(\d+)/g
+  let errRegexp = /error rate: (.*)%/g
 
-  let strippedOutput = StripAnsi(output);
-  let output2 = strippedOutput.substr(strippedOutput.length - 3500);
+  let strippedOutput = StripAnsi(output)
+  let output2 = strippedOutput.substr(strippedOutput.length - 3500)
 
-  let rawParams = jsonRegexp.exec(output2)[1];
-  let params = JSON.parse(rawParams);
-  let endBalance = endBalRegexp.exec(output2)[1];
-  let buyHold = buyHoldRegexp.exec(output2)[1];
-  let vsBuyHold = vsBuyHoldRegexp.exec(output2)[1];
-  let wlMatch = wlRegexp.exec(output2);
-  let errMatch      = errRegexp.exec(output2);
-  let wins          = wlMatch !== null ? parseInt(wlMatch[1]) : 0;
-  let losses        = wlMatch !== null ? parseInt(wlMatch[2]) : 0;
-  let errorRate     = errMatch !== null ? parseInt(errMatch[1]) : 0;
-  let days = parseInt(params.days);
-  let start = parseInt(params.start);
-  let end = parseInt(params.end);
+  let rawParams = jsonRegexp.exec(output2)[1]
+  let params = JSON.parse(rawParams)
+  let endBalance = endBalRegexp.exec(output2)[1]
+  let buyHold = buyHoldRegexp.exec(output2)[1]
+  let vsBuyHold = vsBuyHoldRegexp.exec(output2)[1]
+  let wlMatch = wlRegexp.exec(output2)
+  let errMatch      = errRegexp.exec(output2)
+  let wins          = wlMatch !== null ? parseInt(wlMatch[1]) : 0
+  let losses        = wlMatch !== null ? parseInt(wlMatch[2]) : 0
+  let errorRate     = errMatch !== null ? parseInt(errMatch[1]) : 0
+  let days = parseInt(params.days)
+  let start = parseInt(params.start)
+  let end = parseInt(params.end)
 
   let roi = roundp(
     ((endBalance - params.currency_capital) / params.currency_capital) * 100,
     3
-  );
+  )
 
-  let r = JSON.parse(rawParams.replace(/[\r\n]/g, ''));
-
-  delete r.asset_capital;
-  delete r.buy_pct;
-  delete r.currency_capital;
-  delete r.days;
-  delete r.mode;
-  delete r.order_adjust_time;
-  delete r.population;
-  delete r.population_data;
-  delete r.sell_pct;
-  delete r.start;
-  delete r.end;
-  delete r.stats;
-  delete r.use_strategies;
-  delete r.verbose;
-//  r.selector = r.selector.normalized
+  let r = JSON.parse(rawParams.replace(/[\r\n]/g, ''))
+  delete r.asset_capital
+  delete r.buy_pct
+  delete r.currency_capital
+  delete r.days
+  delete r.mode
+  delete r.order_adjust_time
+  delete r.population
+  delete r.population_data
+  delete r.sell_pct
+  delete r.start
+  delete r.end
+  delete r.stats
+  delete r.use_strategies
+  delete r.verbose
+  r.selector = r.selector.normalized
 
   if (start) {
-    r.start = moment(start).format("YYYYMMDDhhmm");
+    r.start = moment(start).format('YYYYMMDDhhmm')
   }
   if (end) {
-    r.end = moment(end).format("YYYYMMDDhhmm");
+    r.end = moment(end).format('YYYYMMDDhhmm')
   }
   if (!start && !end && params.days) {
-    r.days = params.days;
+    r.days = params.days
   }
 
   return {
@@ -184,26 +175,26 @@ let processOutput = output => {
     selector: params.selector,
     strategy: params.strategy,
     frequency: roundp((wins + losses) / days, 3)
-  };
-};
+  }
+}
 
 let Range = (min, max) => {
   var r = {
     type: 'int',
     min: min,
     max: max
-  };
-  return r;
-};
+  }
+  return r
+}
 
 let Range0 = (min, max) => {
   var r = {
     type: 'int0',
     min: min,
     max: max
-  };
-  return r;
-};
+  }
+  return r
+}
 
 let RangeFactor = (min, max, factor) => {
   var r = {
@@ -211,9 +202,9 @@ let RangeFactor = (min, max, factor) => {
     min: min,
     max: max,
     factor: factor
-  };
-  return r;
-};
+  }
+  return r
+}
 
 
 let RangeFloat = (min, max) => {
@@ -221,9 +212,9 @@ let RangeFloat = (min, max) => {
     type: 'float',
     min: min,
     max: max
-  };
-  return r;
-};
+  }
+  return r
+}
 
 let RangePeriod = (min, max, period_length) => {
   var r = {
@@ -231,55 +222,76 @@ let RangePeriod = (min, max, period_length) => {
     min: min,
     max: max,
     period_length: period_length
-  };
-  return r;
-};
+  }
+  return r
+}
 
 let RangeMakerTaker = () => {
   var r = {
     type: 'makertaker'
-  };
-  return r;
-};
+  }
+  return r
+}
 
 let RangeTaker = () => {
   var r = {
     type: 'taker'
-  };
-  return r;
-};
+  }
+  return r
+}
 
 let RangeMaker = () => {
   var r = {
     type: 'maker'
-  };
-  return r;
-};
+  }
+  return r
+}
 
 let RangeNeuralActivation = () => {
   var r = {
     type: 'sigmoidtanhrelu'
-  };
-  return r;
-};
+  }
+  return r
+}
+let RangeBoolean = () => {
+  var r = {
+    type: 'truefalse'
+  }
+  return r
+}
 
 let strategies = {
   bollinger: {
     period_length: RangePeriod(1, 60, 'm'),
-    min_periods: Range(1, 20),
-    markdown_buy_pct: RangeFloat(0, 3),
-    markup_sell_pct: RangeFloat(0, 3),
+    markdown_buy_pct: RangeFloat(-1, 5),
+    markup_sell_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
-    sell_stop_pct: Range(1, 30),
-    buy_stop_pct: Range(1, 30),
-    profit_stop_enable_pct: Range(1, 20),
+    sell_stop_pct: Range0(1, 50),
+    buy_stop_pct: Range0(1, 50),
+    profit_stop_enable_pct: Range0(1, 20),
     profit_stop_pct: Range(1,20),
 
-  // -- strategy
+    // -- strategy
     bollinger_size: Range(1, 40),
     bollinger_time: RangeFloat(1,6),
-    bollinger_upper_bound_pct: RangeFloat(1, 30),
-    bollinger_lower_bound_pct: RangeFloat(1, 30)
+    bollinger_upper_bound_pct: RangeFloat(-1, 30),
+    bollinger_lower_bound_pct: RangeFloat(-1, 30)
+  },
+  trend_bollinger: {
+    period_length: RangePeriod(1, 60, 'm'),
+    markdown_buy_pct: RangeFloat(-1, 5),
+    markup_sell_pct: RangeFloat(-1, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(1, 50),
+    buy_stop_pct: Range0(1, 50),
+    profit_stop_enable_pct: Range0(1, 20),
+    profit_stop_pct: Range(1,20),
+
+    // -- strategy
+    bollinger_size: Range(1, 40),
+    bollinger_time: RangeFloat(1,6),
+    bollinger_upper_bound_pct: RangeFloat(-1, 30),
+    bollinger_lower_bound_pct: RangeFloat(-1, 30)
   },
   crossover_vwap: {
     // -- common
@@ -540,8 +552,8 @@ let strategies = {
     // -- common
     period_length: RangePeriod(5, 60, 'm'),
     min_periods: Range(1, 30),
-    markdown_buy_pct: RangeFloat(0, 0),
-    markup_sell_pct: RangeFloat(0, 0),
+    markdown_buy_pct: RangeFloat(-1, 1),
+    markup_sell_pct: RangeFloat(-1, 1),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range(1, 40),
     buy_stop_pct: Range(1, 40),
@@ -557,272 +569,300 @@ let strategies = {
     overbought_rsi_periods: Range(1, 30),
     overbought_rsi: Range(70, 95),
     noise_level_pct: Range(0, 5)
-  }
-};
+  },
+  wavetrend: {
+    // -- common
+    period_length: RangePeriod(1, 120, 'm'),
+    min_periods: Range(1, 200),
+    markup_pct: RangeFloat(0, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(1, 50),
+    buy_stop_pct: Range0(1, 50),
+    profit_stop_enable_pct: Range0(1, 20),
+    profit_stop_pct: Range(1,20),
 
+    // -- strategy
+    wavetrend_channel_length: Range(1,20),
+    wavetrend_average_length: Range(1,42),
+    wavetrend_overbought_1: Range(1, 100),
+    wavetrend_overbought_2: Range(1,100),
+    wavetrend_oversold_1: Range(-100,0),
+    wavetrend_oversold_2: Range(-100,0),
+    wavetrend_trends: RangeBoolean()
+  },
+  stddev: {
+    // -- common
+    // reference in extensions is given in ms have not heard of an exchange that supports 500ms thru api so setting min at 1 second
+    period_length: RangePeriod(1, 7200, 's'), 
+    min_periods: Range(1, 2500),
+    markup_pct: RangeFloat(0, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(1, 50),
+    buy_stop_pct: Range0(1, 50),
+    profit_stop_enable_pct: Range0(1, 20),
+    profit_stop_pct: Range(1,20),
+
+    // -- strategy
+    trendtrades_1: Range(2, 20),
+    trendtrades_2: Range(4, 100)
+  },
+  momentum: {
+    period_length: RangePeriod(1, 120, 'm'),
+    min_periods: Range(1, 2500),
+    markup_pct: RangeFloat(0, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(1, 50),
+    buy_stop_pct: Range0(1, 50),
+    profit_stop_enable_pct: Range0(1, 20),
+    profit_stop_pct: Range(1,20),
+    
+    // -- strategy
+    momentum_size: Range(1,20)
+  }
+}
 
 let allStrategyNames = () => {
-  let r = [];
+  let r = []
   for (var k in strategies) {
-    r.push(k);
+    r.push(k)
   }
-  return r;
-};
+  return r
+}
 
-console.log(`\n--==${VERSION}==--`);
-console.log(new Date().toUTCString() + `\n`);
+console.log(`\n--==${VERSION}==--`)
+console.log(new Date().toUTCString() + '\n')
 
 // Get params
-let argv = require('yargs').argv;
-let simArgs = (argv.selector) ? argv.selector : 'bitfinex.ETH-USD';
-if (argv.days) {
-  simArgs += ` --days=${argv.days}`;
-}
-else {
-  if (argv.start) {
-    simArgs += ` --start=${argv.start}`;
-  }
-  if (argv.end) {
-    simArgs += ` --end=${argv.end}`;
-  }
-}
-if (argv.currency_capital) {
-  simArgs += ` --currency_capital=${argv.currency_capital}`;
-}
-if (argv.asset_capital) {
-  simArgs += ` --asset_capital=${argv.asset_capital}`;
-}
-if (argv.symmetrical) {
-  simArgs += ` --symmetrical=true`;
-}
+let argv = require('yargs').argv
+let simArgs = Object.assign({}, argv)
+if (!simArgs.selector)
+  simArgs.selector = 'bitfinex.ETH-USD'
+if (!simArgs.filename)
+  simArgs.filename = 'none'
+delete simArgs.use_strategies
+delete simArgs.population_data
+delete simArgs.population
+delete simArgs['$0'] // This comes in to argv all by itself
+delete simArgs['_']  // This comes in to argv all by itself
 
-simArgs += ` --filename none`;
-
-let strategyName = (argv.use_strategies) ? argv.use_strategies : 'all';
-let populationFileName = (argv.population_data) ? argv.population_data : null;
-let populationSize = (argv.population) ? argv.population : 100;
+let strategyName = (argv.use_strategies) ? argv.use_strategies : 'all'
+let populationFileName = (argv.population_data) ? argv.population_data : null
+let populationSize = (argv.population) ? argv.population : 100
 let fitnessCutoff = (argv.fitness) ? argv.fitness : FITNESS_CUTOFF 
 
-console.log(`Backtesting strategy ${strategyName} ...`);
-console.log(`Creating population of ${populationSize} ...\n`);
+console.log(`Backtesting strategy ${strategyName} ...`)
+console.log(`Creating population of ${populationSize} ...\n`)
 
-let pools = {};
-let selectedStrategies = (strategyName === 'all') ? allStrategyNames() : strategyName.split(',');
+let pools = {}
+let selectedStrategies = (strategyName === 'all') ? allStrategyNames() : strategyName.split(',')
 
-let importedPoolData = (populationFileName) ? JSON.parse(fs.readFileSync(populationFileName, 'utf8')) : null;
+let importedPoolData = (populationFileName) ? JSON.parse(fs.readFileSync(populationFileName, 'utf8')) : null
 
 selectedStrategies.forEach(function(v) {
-  let strategyPool = pools[v] = {};
-  let evolve = true;
+  let strategyPool = pools[v] = {}
+  let evolve = true
 
-  let population = (importedPoolData && importedPoolData[v]) ? importedPoolData[v] : [];
+  let population = (importedPoolData && importedPoolData[v]) ? importedPoolData[v] : []
+
   for (var i = population.length; i < populationSize; ++i) {
-    population.push(Phenotypes.create(strategies[v]));
-    evolve = false;
+    population.push(Phenotypes.create(strategies[v]))
+    evolve = false
   }
 
   strategyPool['config'] = {
     mutationFunction: function(phenotype) {
-      return Phenotypes.mutation(phenotype, strategies[v]);
+      return Phenotypes.mutation(phenotype, strategies[v])
     },
     crossoverFunction: function(phenotypeA, phenotypeB) {
-      return Phenotypes.crossover(phenotypeA, phenotypeB, strategies[v]);
+      return Phenotypes.crossover(phenotypeA, phenotypeB, strategies[v])
     },
     fitnessFunction: Phenotypes.fitness,
     doesABeatBFunction: Phenotypes.competition,
     population: population,
     populationSize: populationSize
-  };
+  }
 
-  strategyPool['pool'] = GeneticAlgorithmCtor(strategyPool.config);
+  strategyPool['pool'] = GeneticAlgorithmCtor(strategyPool.config)
 
-  // if (evolve) {
-  //   console.log(">>>>>>>>>Evolving")
-  //   strategyPool['pool'].evolve();
-  // }
-});
+  if (evolve) {
+     strategyPool['pool'].evolve()
+  }
+})
+
+var isUsefulKey = key => {
+  if(key == 'filename' || key == 'show_options' || key == 'sim') return false
+  return true
+}
 
 var generateCommandParams = input => {
-  input = input.params.replace("module.exports =","");
-  input = JSON.parse(input);
+  input = input.params.replace('module.exports =','')
+  input = JSON.parse(input)
 
-  var result = "";
-  var keys = Object.keys(input);
-  for(i = 0; i < keys.length; i++){
-    var key = keys[i];
+  var result = ''
+  var keys = Object.keys(input)
+  for(let i = 0;i < keys.length;i++){
+    var key = keys[i]
     if(isUsefulKey(key)){
-      if (key == "selector") {
-        result = input[key].normalized + result;
-      }
-      else {
-        result += " --" + key + "=" + input[key];
+      // selector should be at start before keys
+      if(key == 'selector'){
+        result = input[key] + result
       }
 
+      else result += ' --'+key+'='+input[key]
     }
 
   }
-  return result;
-}
-
-var isUsefulKey = key => {
-  if(key == "filename" || key == "show_options" || key == "sim") return false;
-  return true;
+  return result
 }
 
 // Save generation data.
 var saveGenerationData = function(csvFileName, jsonFileName, dataCSV, dataJSON, callback){
   fs.writeFile(csvFileName, dataCSV, err => {
-    if (err) throw err;
-    console.log("> Finished writing generation csv to " + csvFileName);
-    callback(1);
-  });
+    if (err) throw err
+    console.log('> Finished writing generation csv to ' + csvFileName)
+    callback(1)
+  })
   fs.writeFile(jsonFileName, dataJSON, err => {
-    if (err) throw err;
-    console.log("> Finished writing generation json to " + jsonFileName);
-    callback(2);
-  });
+    if (err) throw err
+    console.log('> Finished writing generation json to ' + jsonFileName)
+    callback(2)
+  })
 }
 
-let generationCount = 0;
+let generationCount = 0
 
 // Run simulations
 let simulateGeneration = () => {
-  console.log(`\n\n=== Simulating generation ${++generationCount} ===\n`);
+  console.log(`\n\n=== Simulating generation ${++generationCount} ===\n`)
 
-  let days = argv.days;
+  let days = argv.days
   if (!days) {
     if (argv.start) {
-      var start = moment(argv.start, "YYYYMMDDhhmm");
-      days = Math.max(1, moment().diff(start, 'days'));
+      var start = moment(argv.start, 'YYYYMMDDhhmm')
+      days = Math.max(1, moment().diff(start, 'days'))
     }
     else {
-      var end = moment(argv.end, "YYYYMMDDhhmm");
-      days = moment().diff(end, 'days') + 1;
+      var end = moment(argv.end, 'YYYYMMDDhhmm')
+      days = moment().diff(end, 'days') + 1
     }
   }
 
-  runUpdate(days, argv.selector);
+  runUpdate(days, argv.selector)
 
-  iterationCount = 1;
-
+  iterationCount = 1
   let tasks = selectedStrategies.map(v => pools[v]['pool'].population().map(phenotype => {
     return cb => {
-      runCommand(v, phenotype, cb);
-    };
-  })).reduce((a, b) => a.concat(b));
+      runCommand(v, phenotype, cb)
+    }
+  })).reduce((a, b) => a.concat(b))
 
   parallel(tasks, PARALLEL_LIMIT, (err, results) => {
-    console.log("\n\Generation complete, saving results...");
+    console.log("\n\Generation complete, saving results...")
 
     results = results.filter(function(r) {
       if (r) {
-        r.selector = r.selector.normalized;
+        r.selector = r.selector.normalized
         if (meetsMinimumViability(r)) {
-          return !!r;
+          return !!r
         } else {
-          return false;
+          return false
         }
       }
-    });
+    })
 
-    console.log(JSON.stringify(results))
-
-    let poolData = {};
+    let poolData = {}
     selectedStrategies.forEach(function(v) {
-      data = pools[v]['pool'].population();
+      data = pools[v]['pool'].population()
 
       data = data.filter(function(r) {
         if (meetsMinimumViability(r)) {
-          console.log("Keeping candidate")
           return !!r
         } else {
-          console.log("Eliminating unfit candidate")
-          return false;
+          return false
         }
       })
 
-      poolData[v] = data;
-      var deathCount = 0;
+      poolData[v] = data
+      var deathCount = 0
 
       // trim unfit individuals from the base population
-      population = pools[v]['config'].population;
+      population = pools[v]['config'].population
       population = population.filter(function(r) {
         if (meetsMinimumViability(r)) {
           return !!r
         } else {
           deathCount++
-          return false;
+          return false
         }
       })
 
       // repopulate for each death
       for (var i = 1; i <= deathCount; i++) {
-        population.push(Phenotypes.create(strategies[v]));
+        population.push(Phenotypes.create(strategies[v]))
       }  
-      pools[v]['config'].population = population;
+      pools[v]['config'].population = population
 
 
-    });
+    })
 
     if (results.length > 0) {
 
-	    results.sort((a, b) => (a.fitness < b.fitness) ? 1 : ((b.fitness < a.fitness) ? -1 : 0));
+	    results.sort((a, b) => (a.fitness < b.fitness) ? 1 : ((b.fitness < a.fitness) ? -1 : 0))
 
-	    let fieldsGeneral = ['selector', 'fitness', 'vsBuyHold', 'wlRatio', 'frequency', 'strategy', 'order_type', 'endBalance', 'buyHold', 'wins', 'losses', 'period_length', 'min_periods', 'days', 'params'];
-	    let fieldNamesGeneral = ['Selector', 'Fitness', 'VS Buy Hold (%)', 'Win/Loss Ratio', '# Trades/Day', 'Strategy', 'Order Type', 'Ending Balance ($)', 'Buy Hold ($)', '# Wins', '# Losses', 'Period', 'Min Periods', '# Days', 'Full Parameters'];
+	    let fieldsGeneral = ['selector', 'fitness', 'vsBuyHold', 'wlRatio', 'frequency', 'strategy', 'order_type', 'endBalance', 'buyHold', 'wins', 'losses', 'period_length', 'min_periods', 'days', 'params']
+	    let fieldNamesGeneral = ['Selector', 'Fitness', 'VS Buy Hold (%)', 'Win/Loss Ratio', '# Trades/Day', 'Strategy', 'Order Type', 'Ending Balance ($)', 'Buy Hold ($)', '# Wins', '# Losses', 'Period', 'Min Periods', '# Days', 'Full Parameters']
 
 	    let dataCSV = json2csv({
 	      data: results,
 	      fields: fieldsGeneral,
 	      fieldNames: fieldNamesGeneral
-	    });
+	    })
 
-	    let fileDate = Math.round(+new Date() / 1000);
-	    let csvFileName = `simulations/backtesting_${argv.selector}_${argv.use_strategies}_${fileDate}_gen_${generationCount}.csv`;
-	    let jsonFileName = `simulations/generation_data_${argv.selector}_${argv.use_strategies}_${fileDate}_gen_${generationCount}.json`;
-	    let dataJSON = JSON.stringify(poolData, null, 2);
-	    var filesSaved = 0;
+	    let fileDate = Math.round(+new Date() / 1000)
+	    let csvFileName = `simulations/backtesting_${argv.selector}_${argv.use_strategies}_${fileDate}_gen_${generationCount}.csv`
+	    let jsonFileName = `simulations/generation_data_${argv.selector}_${argv.use_strategies}_${fileDate}_gen_${generationCount}.json`
+	    let dataJSON = JSON.stringify(poolData, null, 2)
+	    var filesSaved = 0
 
 	    saveGenerationData(csvFileName, jsonFileName, dataCSV, dataJSON, (id)=>{
-	      filesSaved++;
+	      filesSaved++
 	      if(filesSaved == 2){
-	        console.log(`\n\nGenerations Best Results`);
+	        console.log(`\n\nGenerations Best Results`)
 	        selectedStrategies.forEach((v)=> {
 
-	          let best = pools[v]['pool'].best();
+	          let best = pools[v]['pool'].best()
 
 	          if(best.sim && best.sim.fitness > 0){
-	            console.log(`\t(${v}) Sim Fitness ${best.sim.fitness}, VS Buy and Hold: ${best.sim.vsBuyHold} End Balance: ${best.sim.endBalance}, Wins/Losses ${best.sim.wins}/${best.sim.losses}.`);
+	            console.log(`\t(${v}) Sim Fitness ${best.sim.fitness}, VS Buy and Hold: ${best.sim.vsBuyHold} End Balance: ${best.sim.endBalance}, Wins/Losses ${best.sim.wins}/${best.sim.losses}.`)
 
 	          } else {
-	            console.log(`\t(${v}) Result Fitness ${results[0].fitness}, VS Buy and Hold: ${results[0].vsBuyHold}, End Balance: ${results[0].endBalance}, Wins/Losses ${results[0].wins}/${results[0].losses}.`);
+	            console.log(`\t(${v}) Result Fitness ${results[0].fitness}, VS Buy and Hold: ${results[0].vsBuyHold}, End Balance: ${results[0].endBalance}, Wins/Losses ${results[0].wins}/${results[0].losses}.`)
 	          }
 
 	          // prepare command snippet from top result for this strat
-	          let prefix = './zenbot.sh sim ';
-	          let bestCommand = generateCommandParams(results[0]);
+	          let prefix = './zenbot.sh sim '
+	          let bestCommand = generateCommandParams(results[0])
 
-	          bestCommand = prefix + bestCommand;
-	          bestCommand = bestCommand + ' --asset_capital=' + argv.asset_capital + ' --currency_capital=' + argv.currency_capital;
+	          bestCommand = prefix + bestCommand
+	          bestCommand = bestCommand + ' --asset_capital=' + argv.asset_capital + ' --currency_capital=' + argv.currency_capital
 
-	          console.log(bestCommand + '\n');
+	          console.log(bestCommand + '\n')
 
 	          if (best.sim && best.sim.fitness > 0) {
-	            Export.best(best, dataJSON);
+	            Export.best(best, dataJSON)
 	          }            
-	          let nextGen = pools[v]['pool'].evolve();
-	        });
-          simulateGeneration();
+	          let nextGen = pools[v]['pool'].evolve()
+	        })
+          simulateGeneration()
 	      }
-	    });
+	    })
    	} else {
-      simulateGeneration();
+      simulateGeneration()
    	}
+  })
+}
 
-  });
-};
-
-simulateGeneration();
+simulateGeneration()
 
 // Some basic minimum fitness criteria to accept candidate in pool.
 // Eliminates 0 wins, low fitness and no trades
