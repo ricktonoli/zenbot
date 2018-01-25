@@ -79,10 +79,12 @@ module.exports = function container (get, set, clear) {
           Object.keys(overrides).forEach(function (k) {
             // Handle the case where the start date comes in as a YYYYmmddHHmm format, comvert it to epoch, the format used by the sim.
             if (k === "start" || k === "end") {
-              so[k] = moment(so[k]).valueOf();
+              so[k] = moment(so[k]).valueOf()
+            } else if (k === "selector") {
+             // do nothing
             } else {
               so[k] = overrides[k]
-            }
+            } 
           })
         }
 
