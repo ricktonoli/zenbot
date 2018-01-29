@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 /* Zenbot 4 Genetic Backtester
  * Clifford Roche <clifford.roche@gmail.com>
  * 07/01/2017
@@ -267,8 +266,8 @@ let RangeBoolean = () => {
 let strategies = {
   bollinger: {
     period_length: RangePeriod(5, 5, 'm'),
-    markdown_buy_pct: RangeFloat(-1, 3),
-    markup_sell_pct: RangeFloat(-1, 3),
+    markdown_buy_pct: RangeFloat(0, 0),
+    markup_sell_pct: RangeFloat(0, 0),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
@@ -367,10 +366,10 @@ let strategies = {
   },
   macd: {
     // -- common
-    period_length: RangePeriod(5, 5, 'm'),
+    period_length: RangePeriod(5, 30, 'm'),
     min_periods: Range(1, 200),
-    markdown_buy_pct: RangeFloat(-1, 5),
-    markup_sell_pct: RangeFloat(-1, 5),
+    markdown_buy_pct: RangeFloat(0, 3),
+    markup_sell_pct: RangeFloat(0, 3),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
@@ -554,7 +553,7 @@ let strategies = {
   },
   dema: {
     // -- common
-    period_length: RangePeriod(10, 60, 'm'),
+    period_length: RangePeriod(5, 60, 'm'),
     min_periods: Range(1, 30),
     markdown_buy_pct: RangeFloat(-1, 2),
     markup_sell_pct: RangeFloat(-1, 2),
