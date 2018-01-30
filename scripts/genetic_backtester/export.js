@@ -2,9 +2,10 @@
 let fs = require('fs');
 let path = require('path');
 
+// These settings allow you to fine tune at which point a configuration is exported to your strategies folder
 let MIN_ROI = 5;
 let MIN_WIN_LOSS_RATIO = 0.3;
-let MIN_VSBUYHOLD = -10;
+let MIN_VSBUYHOLD = 2;
 
 module.exports = {
   best: function(best, dataJSON) {
