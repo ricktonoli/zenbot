@@ -33,3 +33,5 @@ dist/*
 strategies
 .idea
 *.iml
+simulations/sim_*.json
+

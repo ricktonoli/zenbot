@@ -120,9 +120,9 @@
     "id": "WTCBTC",
     "asset": "WTC",
     "currency": "BTC",
-    "min_size": "1.00000000",
+    "min_size": "0.01000000",
     "max_size": "100000",
-    "increment": "0.00000001",
+    "increment": "0.0000001",
     "label": "WTC/BTC"
   },
   {
@@ -1206,6 +1206,42 @@
     "label": "ICX/ETH"
   },
   {
+    "id": "INSBTC",
+    "asset": "INS",
+    "currency": "BTC",
+    "min_size": "0.01000000",
+    "max_size": "100000",
+    "increment": "0.0000001",
+    "label": "INS/BTC"
+  },
+  {
+    "id": "INSETH",
+    "asset": "INS",
+    "currency": "ETH",
+    "min_size": "0.01000000",
+    "max_size": "100000",
+    "increment": "0.000001",
+    "label": "INS/ETH"
+  },
+  {
+    "id": "IOSTBTC",
+    "asset": "IOST",
+    "currency": "BTC",
+    "min_size": "1.00000000",
+    "max_size": "100000",
+    "increment": "0.00000001",
+    "label": "IOST/BTC"
+  },
+  {
+    "id": "IOSTETH",
+    "asset": "IOST",
+    "currency": "ETH",
+    "min_size": "1.00000000",
+    "max_size": "100000",
+    "increment": "0.00000001",
+    "label": "IOST/ETH"
+  },
+  {
     "id": "IOTABNB",
     "asset": "IOTA",
     "currency": "BNB",
@@ -1548,6 +1584,33 @@
     "label": "OST/ETH"
   },
   {
+    "id": "PIVXBNB",
+    "asset": "PIVX",
+    "currency": "BNB",
+    "min_size": "0.01000000",
+    "max_size": "100000",
+    "increment": "0.00001",
+    "label": "PIVX/BNB"
+  },
+  {
+    "id": "PIVXBTC",
+    "asset": "PIVX",
+    "currency": "BTC",
+    "min_size": "0.01000000",
+    "max_size": "100000",
+    "increment": "0.0000001",
+    "label": "PIVX/BTC"
+  },
+  {
+    "id": "PIVXETH",
+    "asset": "PIVX",
+    "currency": "ETH",
+    "min_size": "0.01000000",
+    "max_size": "100000",
+    "increment": "0.000001",
+    "label": "PIVX/ETH"
+  },
+  {
     "id": "POEBTC",
     "asset": "POE",
     "currency": "BTC",
@@ -1708,6 +1771,33 @@
     "max_size": "100000",
     "increment": "0.00000001",
     "label": "REQ/ETH"
+  },
+  {
+    "id": "RLCBNB",
+    "asset": "RLC",
+    "currency": "BNB",
+    "min_size": "0.01000000",
+    "max_size": "100000",
+    "increment": "0.00001",
+    "label": "RLC/BNB"
+  },
+  {
+    "id": "RLCBTC",
+    "asset": "RLC",
+    "currency": "BTC",
+    "min_size": "0.01000000",
+    "max_size": "100000",
+    "increment": "0.0000001",
+    "label": "RLC/BTC"
+  },
+  {
+    "id": "RLCETH",
+    "asset": "RLC",
+    "currency": "ETH",
+    "min_size": "0.01000000",
+    "max_size": "100000",
+    "increment": "0.000001",
+    "label": "RLC/ETH"
   },
   {
     "id": "SNTBTC",

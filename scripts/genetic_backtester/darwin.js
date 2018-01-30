@@ -14,11 +14,12 @@ let GeneticAlgorithmCtor = require('geneticalgorithm')
 let StripAnsi = require('strip-ansi')
 let moment = require('moment')
 let fs = require('fs')
+let path = require('path')
 
 let Phenotypes = require('./phenotype.js')
 let Export = require('./export.js')
 
-let VERSION = 'Zenbot 4 Genetic Backtester v0.2'
+let VERSION = 'Zenbot 4 Genetic Backtester v0.2.1'
 
 let PARALLEL_LIMIT = (process.env.PARALLEL_LIMIT && +process.env.PARALLEL_LIMIT) || require('os').cpus().length
 
@@ -63,6 +64,7 @@ let runCommand = (taskStrategyName, phenotype, cb) => {
 
   phenotype['sim'] = {}
 
+
   shell.exec(command, {
     silent: true,
     async: true
@@ -75,7 +77,7 @@ let runCommand = (taskStrategyName, phenotype, cb) => {
 
     let result = null
     try {
-      result = processOutput(stdout)
+      result = processOutput(stdout,taskStrategyName,phenotype)
       phenotype['sim'] = result
       result['fitness'] = Phenotypes.fitness(phenotype)
     } catch (err) {
@@ -99,37 +101,61 @@ let runUpdate = (days, selector) => {
   })
 }
 
-let processOutput = output => {
-  let jsonRegexp = /(\{[\s\S]*?\})\send balance/g
-  let endBalRegexp = /end balance: (\d+\.\d+) \(/g
-  let buyHoldRegexp = /buy hold: (\d+\.\d+) \(/g
-  let vsBuyHoldRegexp = /vs. buy hold: (-?\d+\.\d+)%/g
-  let wlRegexp = /win\/loss: (\d+)\/(\d+)/g
-  let errRegexp = /error rate: (.*)%/g
+let processOutput = (output,taskStrategyName, pheno)=> {
+
 
   let strippedOutput = StripAnsi(output)
   let output2 = strippedOutput.substr(strippedOutput.length - 3500)
 
-  let rawParams = jsonRegexp.exec(output2)[1]
-  let params = JSON.parse(rawParams)
-  let endBalance = endBalRegexp.exec(output2)[1]
-  let buyHold = buyHoldRegexp.exec(output2)[1]
-  let vsBuyHold = vsBuyHoldRegexp.exec(output2)[1]
-  let wlMatch = wlRegexp.exec(output2)
-  let errMatch      = errRegexp.exec(output2)
-  let wins          = wlMatch !== null ? parseInt(wlMatch[1]) : 0
-  let losses        = wlMatch !== null ? parseInt(wlMatch[2]) : 0
-  let errorRate     = errMatch !== null ? parseInt(errMatch[1]) : 0
-  let days = parseInt(params.days)
-  let start = parseInt(params.start)
-  let end = parseInt(params.end)
+  let tFileName = path.resolve(__dirname, '..','..', 'simulations','sim_'+taskStrategyName.replace('_','')+'_'+ pheno.exchangeMarketPair.toLowerCase().replace('_','')+'_'+pheno.backtester_generation+'.json')
+  let simulationResults
 
-  let roi = roundp(
-    ((endBalance - params.currency_capital) / params.currency_capital) * 100,
-    3
-  )
+  let params
+  let endBalance
+  let buyHold
+  let vsBuyHold
+  let wlMatch
+  let errMatch
+  let wins
+  let losses
+  let errorRate
+  let days
+  let start
+  let end
+  // This can retrieve the results from 2 different places.  It defaults to reading it from the json file
+  // but if no file is found it will fall back to the older metheod of scraping the output of the sim process
+  // stdio scraping to be removed after full verification of functionality.
+  // todo: see above comment
+  if (fs.existsSync(tFileName))
+  {
+    let jsonBuffer
+    jsonBuffer = fs.readFileSync(tFileName,{encoding:'utf8'})
+    simulationResults = JSON.parse(jsonBuffer)
+    fs.unlinkSync(tFileName)
+  }
 
-  let r = JSON.parse(rawParams.replace(/[\r\n]/g, ''))
+
+  if (typeof(simulationResults) === 'object'  )
+  {
+    params = simulationResults
+    endBalance = simulationResults.simresults.currency
+    buyHold = simulationResults.simresults.buy_hold
+    vsBuyHold = simulationResults.simresults.vs_buy_hold
+    wlMatch = (simulationResults.simresults.total_sells - simulationResults.simresults.total_losses) +'/'+ simulationResults.simresults.total_losses
+    wins          = simulationResults.simresults.total_sells
+    losses        = simulationResults.simresults.total_losses
+    errorRate     = simulationResults.simresults.total_losses / simulationResults.simresults.total_sells
+    days = parseInt(simulationResults.days)
+    start = parseInt(simulationResults.start)
+    end = parseInt(simulationResults.end || null)
+  }
+
+
+  let roi = roundp(((endBalance - params.currency_capital) / params.currency_capital) * 100, 3 )
+
+
+  //todo: figure out what this is trying to do.
+  let r = params
   delete r.asset_capital
   delete r.buy_pct
   delete r.currency_capital
@@ -144,6 +170,7 @@ let processOutput = output => {
   delete r.stats
   delete r.use_strategies
   delete r.verbose
+  delete r.simresults
   r.selector = r.selector.normalized
 
   if (start) {
@@ -156,11 +183,11 @@ let processOutput = output => {
     r.days = params.days
   }
 
-  return {
+  let results = {
     params: 'module.exports = ' + JSON.stringify(r),
     endBalance: parseFloat(endBalance),
     buyHold: parseFloat(buyHold),
-    vsBuyHold: parseFloat(vsBuyHold),
+    vsBuyHold: parseFloat(vsBuyHold) || vsBuyHold,
     wins: wins,
     losses: losses,
     errorRate: parseFloat(errorRate),
@@ -176,6 +203,7 @@ let processOutput = output => {
     strategy: params.strategy,
     frequency: roundp((wins + losses) / days, 3)
   }
+  return results
 }
 
 let Range = (min, max) => {
@@ -262,7 +290,8 @@ let RangeBoolean = () => {
 
 let strategies = {
   bollinger: {
-    period_length: RangePeriod(1, 60, 'm'),
+    // -- common
+    period_length: RangePeriod(1, 120, 'm'),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
@@ -277,8 +306,10 @@ let strategies = {
     bollinger_upper_bound_pct: RangeFloat(-1, 30),
     bollinger_lower_bound_pct: RangeFloat(-1, 30)
   },
-  trend_bollinger: {
-    period_length: RangePeriod(1, 60, 'm'),
+  cci_srsi: {
+    // -- common
+    period_length: RangePeriod(1, 120, 'm'),
+    min_periods: Range(1, 200),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
@@ -288,12 +319,19 @@ let strategies = {
     profit_stop_pct: Range(1,20),
 
     // -- strategy
-    bollinger_size: Range(1, 40),
-    bollinger_time: RangeFloat(1,6),
-    bollinger_upper_bound_pct: RangeFloat(-1, 30),
-    bollinger_lower_bound_pct: RangeFloat(-1, 30)
+    ema_acc: RangeFloat(0, 0.5),
+    cci_periods: Range(1, 200),
+    rsi_periods: Range(1, 200),
+    srsi_periods: Range(1, 200),
+    srsi_k: Range(1, 50),
+    srsi_d: Range(1, 50),
+    oversold_rsi: Range(1, 100),
+    overbought_rsi: Range(1, 100),
+    oversold_cci: Range(-100, 100),
+    overbought_cci: Range(1, 100),
+    constant: RangeFloat(0.001, 0.05)
   },
-  crossover_vwap: {
+crossover_vwap: {
     // -- common
     period_length: RangePeriod(1, 400, 'm'),
     min_periods: Range(1, 200),
@@ -310,9 +348,9 @@ let strategies = {
     smalen1: Range(1, 300),
     smalen2: Range(1, 300),
     vwap_length: Range(1, 300),
-    vwap_max: RangeFactor(0, 10000, 10)//0 disables this max cap. Test in increments of 10
+    vwap_max: RangeFactor(0, 10000, 10) //0 disables this max cap. Test in increments of 10
   },
-  cci_srsi: {
+  dema: {
     // -- common
     period_length: RangePeriod(5, 15, 'm'),
     min_periods: Range(1, 200),
@@ -336,7 +374,7 @@ let strategies = {
     overbought_cci: Range(1, 100),
     constant: RangeFloat(0.001, 0.05)
   },
-  srsi_macd: {
+  macd: {
     // -- common
     period_length: RangePeriod(5, 15, 'm'),
     min_periods: Range(1, 50),
@@ -361,10 +399,10 @@ let strategies = {
     up_trend_threshold: Range(1, 20),
     down_trend_threshold: Range(1, 20)
   },
-  macd: {
+  momentum: {
     // -- common
     period_length: RangePeriod(1, 120, 'm'),
-    min_periods: Range(1, 200),
+    min_periods: Range(1, 2500),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
@@ -374,13 +412,7 @@ let strategies = {
     profit_stop_pct: Range(1,20),
 
     // -- strategy
-    ema_short_period: Range(1, 20),
-    ema_long_period: Range(20, 100),
-    signal_period: Range(1, 20),
-    up_trend_threshold: Range(0, 50),
-    down_trend_threshold: Range(0, 50),
-    overbought_rsi_periods: Range(1, 50),
-    overbought_rsi: Range(20, 100)
+    momentum_size: Range(1,20)
   },
   neural: {
     // -- common
@@ -393,6 +425,7 @@ let strategies = {
     buy_stop_pct: Range0(1, 50),
     profit_stop_enable_pct: Range0(1, 20),
     profit_stop_pct: Range(1,20),
+
     // -- strategy
     neurons_1: Range(1, 200),
     activation_1_type: RangeNeuralActivation(),
@@ -454,7 +487,49 @@ let strategies = {
     baseline_periods: Range(1, 5000),
     trigger_factor: RangeFloat(0.1, 10)
   },
-  trend_ema: {
+  srsi_macd: {
+    // -- common
+    period_length: RangePeriod(1, 120, 'm'),
+    min_periods: Range(1, 200),
+    markdown_buy_pct: RangeFloat(-1, 5),
+    markup_sell_pct: RangeFloat(-1, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(1, 50),
+    buy_stop_pct: Range0(1, 50),
+    profit_stop_enable_pct: Range0(1, 20),
+    profit_stop_pct: Range(1,20),
+
+    // -- strategy
+    rsi_periods: Range(1, 200),
+    srsi_periods: Range(1, 200),
+    srsi_k: Range(1, 50),
+    srsi_d: Range(1, 50),
+    oversold_rsi: Range(1, 100),
+    overbought_rsi: Range(1, 100),
+    ema_short_period: Range(1, 20),
+    ema_long_period: Range(20, 100),
+    signal_period: Range(1, 20),
+    up_trend_threshold: Range(0, 20),
+    down_trend_threshold: Range(0, 20)
+  },
+  stddev: {
+    // -- common
+    // reference in extensions is given in ms have not heard of an exchange that supports 500ms thru api so setting min at 1 second
+    period_length: RangePeriod(1, 7200, 's'),
+    min_periods: Range(1, 2500),
+    markdown_buy_pct: RangeFloat(-1, 5),
+    markup_sell_pct: RangeFloat(-1, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(1, 50),
+    buy_stop_pct: Range0(1, 50),
+    profit_stop_enable_pct: Range0(1, 20),
+    profit_stop_pct: Range(1,20),
+
+    // -- strategy
+    trendtrades_1: Range(2, 20),
+    trendtrades_2: Range(4, 100)
+  },
+  ta_ema: {
     // -- common
     period_length: RangePeriod(1, 120, 'm'),
     min_periods: Range(1, 100),
@@ -470,26 +545,6 @@ let strategies = {
     trend_ema: Range(TREND_EMA_MIN, TREND_EMA_MAX),
     oversold_rsi_periods: Range(OVERSOLD_RSI_PERIODS_MIN, OVERSOLD_RSI_PERIODS_MAX),
     oversold_rsi: Range(OVERSOLD_RSI_MIN, OVERSOLD_RSI_MAX)
-  },
-  trust_distrust: {
-    // -- common
-    period_length: RangePeriod(1, 120, 'm'),
-    min_periods: Range(1, 100),
-    markdown_buy_pct: RangeFloat(-1, 5),
-    markup_sell_pct: RangeFloat(-1, 5),
-    order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 50),
-    buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
-
-    // -- strategy
-    sell_threshold: Range(1, 100),
-    sell_threshold_max: Range0(1, 100),
-    sell_min: Range(1, 100),
-    buy_threshold: Range(1, 100),
-    buy_threshold_max: Range0(1, 100),
-    greed: Range(1, 100)
   },
   ta_macd: {
     // -- common
@@ -513,10 +568,9 @@ let strategies = {
     overbought_rsi_periods: Range(1, 50),
     overbought_rsi: Range(20, 100)
   },
-  trendline: {
+  trend_bollinger: {
     // -- common
-    period_length: RangePeriod(1, 400, 'm'),
-    min_periods: Range(1, 200),
+    period_length: RangePeriod(1, 120, 'm'),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
@@ -526,12 +580,12 @@ let strategies = {
     profit_stop_pct: Range(1,20),
 
     // -- strategy
-    lastpoints: Range(20, 500),
-    avgpoints: Range(300, 3000),
-    lastpoints2: Range(5, 300),
-    avgpoints2: Range(50, 1000),
+    bollinger_size: Range(1, 40),
+    bollinger_time: RangeFloat(1,6),
+    bollinger_upper_bound_pct: RangeFloat(-1, 30),
+    bollinger_lower_bound_pct: RangeFloat(-1, 30)
   },
-  ta_ema: {
+  trend_ema: {
     // -- common
     period_length: RangePeriod(1, 120, 'm'),
     min_periods: Range(1, 100),
@@ -548,12 +602,12 @@ let strategies = {
     oversold_rsi_periods: Range(OVERSOLD_RSI_PERIODS_MIN, OVERSOLD_RSI_PERIODS_MAX),
     oversold_rsi: Range(OVERSOLD_RSI_MIN, OVERSOLD_RSI_MAX)
   },
-  dema: {
+  trendline: {
     // -- common
-    period_length: RangePeriod(5, 60, 'm'),
-    min_periods: Range(1, 30),
-    markdown_buy_pct: RangeFloat(-1, 1),
-    markup_sell_pct: RangeFloat(-1, 1),
+    period_length: RangePeriod(1, 400, 'm'),
+    min_periods: Range(1, 200),
+    markdown_buy_pct: RangeFloat(-1, 5),
+    markup_sell_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range(1, 40),
     buy_stop_pct: Range(1, 40),
@@ -569,12 +623,37 @@ let strategies = {
     overbought_rsi_periods: Range(1, 30),
     overbought_rsi: Range(70, 95),
     noise_level_pct: Range(0, 5)
+    lastpoints: Range(20, 500),
+    avgpoints: Range(300, 3000),
+    lastpoints2: Range(5, 300),
+    avgpoints2: Range(50, 1000),
+  },
+  trust_distrust: {
+    // -- common
+    period_length: RangePeriod(1, 120, 'm'),
+    min_periods: Range(1, 100),
+    markdown_buy_pct: RangeFloat(-1, 5),
+    markup_sell_pct: RangeFloat(-1, 5),
+    order_type: RangeMakerTaker(),
+    sell_stop_pct: Range0(1, 50),
+    buy_stop_pct: Range0(1, 50),
+    profit_stop_enable_pct: Range0(1, 20),
+    profit_stop_pct: Range(1,20),
+
+    // -- strategy
+    sell_threshold: Range(1, 100),
+    sell_threshold_max: Range0(1, 100),
+    sell_min: Range(1, 100),
+    buy_threshold: Range(1, 100),
+    buy_threshold_max: Range0(1, 100),
+    greed: Range(1, 100)
   },
   wavetrend: {
     // -- common
     period_length: RangePeriod(1, 120, 'm'),
     min_periods: Range(1, 200),
-    markup_pct: RangeFloat(0, 5),
+    markdown_buy_pct: RangeFloat(-1, 5),
+    markup_sell_pct: RangeFloat(-1, 5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
@@ -589,35 +668,6 @@ let strategies = {
     wavetrend_oversold_1: Range(-100,0),
     wavetrend_oversold_2: Range(-100,0),
     wavetrend_trends: RangeBoolean()
-  },
-  stddev: {
-    // -- common
-    // reference in extensions is given in ms have not heard of an exchange that supports 500ms thru api so setting min at 1 second
-    period_length: RangePeriod(1, 7200, 's'), 
-    min_periods: Range(1, 2500),
-    markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 50),
-    buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
-
-    // -- strategy
-    trendtrades_1: Range(2, 20),
-    trendtrades_2: Range(4, 100)
-  },
-  momentum: {
-    period_length: RangePeriod(1, 120, 'm'),
-    min_periods: Range(1, 2500),
-    markup_pct: RangeFloat(0, 5),
-    order_type: RangeMakerTaker(),
-    sell_stop_pct: Range0(1, 50),
-    buy_stop_pct: Range0(1, 50),
-    profit_stop_enable_pct: Range0(1, 20),
-    profit_stop_pct: Range(1,20),
-    
-    // -- strategy
-    momentum_size: Range(1,20)
   }
 }
 
@@ -657,6 +707,29 @@ let pools = {}
 let selectedStrategies = (strategyName === 'all') ? allStrategyNames() : strategyName.split(',')
 
 let importedPoolData = (populationFileName) ? JSON.parse(fs.readFileSync(populationFileName, 'utf8')) : null
+
+//Clean up any generation files left over in the simulation directory
+//they will be overwritten, but best not to confuse the issue.
+//if it fails.   doesn't matter they will be overwritten anyways. not need to halt the system.
+try
+{
+  let tDirName = path.resolve(__dirname, '..','..', 'simulations')
+  let tFileName = 'sim_'
+  let files = fs.readdirSync(tDirName)
+
+  for(let i = 0; i < files.length; i++)
+  {
+    if (files[i].lastIndexOf(tFileName) == 0)
+    {
+      let filePath = path.resolve(__dirname, '..','..', 'simulations',files[i] )
+      fs.unlinkSync(filePath)
+    }
+
+  }
+} catch (err)
+{
+  console.log('error deleting lint from prior run')
+}
 
 selectedStrategies.forEach(function(v) {
   let strategyPool = pools[v] = {}
@@ -752,6 +825,8 @@ let simulateGeneration = () => {
   iterationCount = 1
   let tasks = selectedStrategies.map(v => pools[v]['pool'].population().map(phenotype => {
     return cb => {
+      phenotype.backtester_generation = iterationCount
+      phenotype.exchangeMarketPair = argv.selector
       runCommand(v, phenotype, cb)
     }
   })).reduce((a, b) => a.concat(b))
