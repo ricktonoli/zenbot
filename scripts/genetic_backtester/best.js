@@ -224,7 +224,7 @@ var finishedRun = []
 
 parallel(tasks, PARALLEL_LIMIT, (err, results) => {
 	finishedRun.push(results)
-  results.sort((a, b) => (a.fitness < b.fitness) ? 1 : ((b.fitness < a.fitness) ? -1 : 0))
+  results.sort((a, b) => (a?a.fitness:0 < b?b.fitness:0) ? 1 : ((b?b.fitness:0 < a?a.fitness:0) ? -1 : 0))
 
   outputDir="strategies/" + results[0].selector.normalized + "/best/"
 

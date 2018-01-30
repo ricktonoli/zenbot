@@ -265,7 +265,7 @@ let RangeBoolean = () => {
 
 let strategies = {
   bollinger: {
-    period_length: RangePeriod(5, 5, 'm'),
+    period_length: RangePeriod(5, 30, 'm'),
     markdown_buy_pct: RangeFloat(0, 0),
     markup_sell_pct: RangeFloat(0, 0),
     order_type: RangeMakerTaker(),
