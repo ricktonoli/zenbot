@@ -41,7 +41,7 @@ let NEUTRAL_RATE_AUTO = false
 // The following filters remove candidates from the results
 
 let FITNESS_CUTOFF = 0.5  // Do not allow phenotypes lower than this fitness
-let ROI_CUTOFF = 5  // Do not allow results with roi lower than this percentage
+let ROI_CUTOFF = 5  // Do not allow results with ROI lower than this percentage
 let WLRATIO_CUTOFF = 0.3  // Do not allow results with win loss ration below this
 
 let iterationCount = 0
@@ -156,8 +156,6 @@ let processOutput = (output,taskStrategyName, pheno)=> {
 
   let roi = roundp(((endBalance - params.currency_capital) / params.currency_capital) * 100, 3 )
 
-
-  //todo: figure out what this is trying to do.
   let r = params
   delete r.asset_capital
   delete r.buy_pct
@@ -174,6 +172,7 @@ let processOutput = (output,taskStrategyName, pheno)=> {
   delete r.use_strategies
   delete r.verbose
   delete r.simresults
+  delete r.fitness
   r.selector = r.selector.normalized
 
   if (start) {
@@ -379,7 +378,7 @@ crossover_vwap: {
   },
   macd: {
     // -- common
-    period_length: RangePeriod(5, 15, 'm'),
+    period_length: RangePeriod(5, 30, 'm'),
     min_periods: Range(1, 50),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
@@ -859,7 +858,7 @@ let simulateGeneration = () => {
       // trim unfit individuals from the base population
       population = pools[v]['config'].population
       population = population.filter(function(r) {
-        if (meetsMinimumViability(r)) {
+        if (meetsMinimumViability(r, true)) {
           return !!r
         } else {
           deathCount++
@@ -937,8 +936,7 @@ simulateGeneration()
 
 // Some basic minimum fitness criteria to accept candidate in pool.
 // Eliminates 0 wins, low fitness and no trades, low roi, low win loss ratio.
-function meetsMinimumViability(candidate) {
-  console.log(JSON.stringify(candidate))
+function meetsMinimumViability(candidate, report) {
   result = true
 
   data = candidate.sim?candidate.sim:candidate
@@ -948,6 +946,10 @@ function meetsMinimumViability(candidate) {
     result = result && parseFloat(data.roi) > roiCutoff
     result = result && parseInt(data.wins) > 0
     result = result && parseFloat(data.frequency) > 0
+    if (report) {
+      rating = result?"Accepted":"Rejected"
+      console.log("Candidate rating, Fitness: " + data.fitness + " ROI: " + data.roi + " Wins: " + data.wins + " Trades: " + data.frequency + ", " + rating)
+    }
   } else {
     result = false
   }
