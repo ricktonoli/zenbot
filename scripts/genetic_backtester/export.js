@@ -35,11 +35,12 @@ module.exports = {
     days = best.sim.days
     wlRatio = best.sim.wlRatio
 
+
     // basic safety net to prevent bad config file
     if (roi > MIN_ROI && vsBuyHold >= MIN_VSBUYHOLD && wlRatio > MIN_WIN_LOSS_RATIO) {
       parameters = best.sim.params
 
-      selector = best.sim.selector
+      selector = best.exchangeMarketPair
       strategy = best.sim.strategy
 
       outputDir="strategies/" + selector + "/" + days + "/"
