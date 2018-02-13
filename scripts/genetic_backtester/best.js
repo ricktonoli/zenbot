@@ -91,7 +91,10 @@ let runUpdate = (days, selector) => {
 
 let processOutput = (data, taskStrategyName)=> {
 
-  let tFileName = path.resolve(__dirname, '..','..', 'simulations','sim_'+data.strategy.replace('_','')+'_'+ data.selector.toLowerCase().replace('_','')+'_1.json')
+
+  selector = data.selector.normalized?data.selector.normalized:data.selector
+
+  let tFileName = path.resolve(__dirname, '..','..', 'simulations','sim_'+data.strategy.replace('_','')+'_'+ selector.toLowerCase().replace('_','')+'_1.json')
 
   let simulationResults
 
@@ -249,7 +252,7 @@ parallel(tasks, PARALLEL_LIMIT, (err, results) => {
 //  results.sort((a, b) => (a?a.fitness:0 < b?b.fitness:0) ? 1 : ((b?b.fitness:0 < a?a.fitness:0) ? -1 : 0))
   results.sort((a, b) => (a.fitness < b.fitness) ? 1 : ((b.fitness < a.fitness) ? -1 : 0))
 
-console.log(JSON.stringify(results))
+//console.log(JSON.stringify(results))
 
   outputDir="strategies/" + results[0].selector + "/best/" + days + "/"
 

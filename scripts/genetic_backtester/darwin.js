@@ -40,18 +40,12 @@ let NEUTRAL_RATE_AUTO = false
 
 // The following filters remove candidates from the results
 
-let FITNESS_CUTOFF = 0.5  // Do not allow phenotypes lower than this fitness
-let ROI_CUTOFF = 5  // Do not allow results with ROI lower than this percentage
-let WLRATIO_CUTOFF = 0.3  // Do not allow results with win loss ration below this
-
 let iterationCount = 0
-
 
 let runCommand = (taskStrategyName, phenotype, cb) => {
   var cmdArgs = Object.assign({}, phenotype)
   cmdArgs.strategy = taskStrategyName
   Object.assign(cmdArgs, simArgs)
-
   var selector = cmdArgs.selector
   delete cmdArgs.selector
   delete cmdArgs.sim
@@ -335,10 +329,10 @@ let strategies = {
   },
 crossover_vwap: {
     // -- common
-    period_length: RangePeriod(1, 400, 'm'),
-    min_periods: Range(1, 200),
-    markdown_buy_pct: RangeFloat(-1, 5),
-    markup_sell_pct: RangeFloat(-1, 5),
+    period_length: RangePeriod(1, 60, 'm'),
+    min_periods: Range(1, 100),
+    markdown_buy_pct: RangeFloat(-1, 0.5),
+    markup_sell_pct: RangeFloat(-1, 0.5),
     order_type: RangeMakerTaker(),
     sell_stop_pct: Range0(1, 50),
     buy_stop_pct: Range0(1, 50),
@@ -354,7 +348,7 @@ crossover_vwap: {
   },
   dema: {
     // -- common
-    period_length: RangePeriod(5, 15, 'm'),
+    period_length: RangePeriod(5, 30, 'm'),
     min_periods: Range(1, 200),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
@@ -418,7 +412,7 @@ crossover_vwap: {
   },
   neural: {
     // -- common
-    period_length: RangePeriod(1, 120, 'm'),
+    period_length: RangePeriod(5, 60, 'm'),
     min_periods: Range(1, 200),
     markdown_buy_pct: RangeFloat(-1, 5),
     markup_sell_pct: RangeFloat(-1, 5),
@@ -692,8 +686,6 @@ delete simArgs['_']  // This comes in to argv all by itself
 let strategyName = (argv.use_strategies) ? argv.use_strategies : 'all'
 let populationFileName = (argv.population_data) ? argv.population_data : null
 let populationSize = (argv.population) ? argv.population : 100
-let fitnessCutoff = (argv.fitness) ? argv.fitness : FITNESS_CUTOFF 
-let roiCutoff = (argv.roi) ? argv.roi : ROI_CUTOFF
 
 console.log(`Backtesting strategy ${strategyName} ...`)
 console.log(`Creating population of ${populationSize} ...\n`)
@@ -830,49 +822,13 @@ let simulateGeneration = () => {
     console.log("\n\Generation complete, saving results...")
 
     results = results.filter(function(r) {
-      if (r) {
-        r.selector = r.selector.normalized
-        if (meetsMinimumViability(r)) {
-          return !!r
-        } else {
-          return false
-        }
-      }
+      return !!r
     })
 
     let poolData = {}
     selectedStrategies.forEach(function(v) {
       data = pools[v]['pool'].population()
-
-      data = data.filter(function(r) {
-        if (meetsMinimumViability(r)) {
-          return !!r
-        } else {
-          return false
-        }
-      })
-
       poolData[v] = data
-      var deathCount = 0
-
-      // trim unfit individuals from the base population
-      population = pools[v]['config'].population
-      population = population.filter(function(r) {
-        if (meetsMinimumViability(r, true)) {
-          return !!r
-        } else {
-          deathCount++
-          return false
-        }
-      })
-
-      // repopulate for each death
-      for (var i = 1; i <= deathCount; i++) {
-        population.push(Phenotypes.create(strategies[v]))
-      }  
-      pools[v]['config'].population = population
-
-
     })
 
     if (results.length > 0) {
@@ -902,11 +858,14 @@ let simulateGeneration = () => {
 
 	          let best = pools[v]['pool'].best()
 
+            let bestest = {}
+
 	          if(best.sim && best.sim.fitness > 0){
 	            console.log(`\t(${v}) Sim Fitness ${best.sim.fitness}, VS Buy and Hold: ${best.sim.vsBuyHold} End Balance: ${best.sim.endBalance}, Wins/Losses ${best.sim.wins}/${best.sim.losses}.`)
-
+              bestest = best.sim
 	          } else {
 	            console.log(`\t(${v}) Result Fitness ${results[0].fitness}, VS Buy and Hold: ${results[0].vsBuyHold}, End Balance: ${results[0].endBalance}, Wins/Losses ${results[0].wins}/${results[0].losses}.`)
+              bestest = results[0]
 	          }
 
 	          // prepare command snippet from top result for this strat
@@ -918,9 +877,14 @@ let simulateGeneration = () => {
 
 	          console.log(bestCommand + '\n')
 
-	          if (best.sim && best.sim.fitness > 0) {
-	            Export.best(best, dataJSON)
-	          }            
+            console.log(bestest)
+
+	          if (bestest) {
+	            Export.best(bestest, dataJSON)
+	          } else {
+              console.log("No best result found.")
+            }      
+
 	          let nextGen = pools[v]['pool'].evolve()
 	        })
           simulateGeneration()
@@ -933,25 +897,3 @@ let simulateGeneration = () => {
 }
 
 simulateGeneration()
-
-// Some basic minimum fitness criteria to accept candidate in pool.
-// Eliminates 0 wins, low fitness and no trades, low roi, low win loss ratio.
-function meetsMinimumViability(candidate, report) {
-  result = true
-
-  data = candidate.sim?candidate.sim:candidate
-
-  if (data) {
-    result = result && parseFloat(data.fitness) > fitnessCutoff
-    result = result && parseFloat(data.roi) > roiCutoff
-    result = result && parseInt(data.wins) > 0
-    result = result && parseFloat(data.frequency) > 0
-    if (report) {
-      rating = result?"Accepted":"Rejected"
-      console.log("Candidate rating, Fitness: " + data.fitness + " ROI: " + data.roi + " Wins: " + data.wins + " Trades: " + data.frequency + ", " + rating)
-    }
-  } else {
-    result = false
-  }
-  return result
-}

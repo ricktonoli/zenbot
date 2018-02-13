@@ -73,6 +73,8 @@ module.exports = function container (get, set, clear) {
         }
         var engine = get('lib.engine')(s)
 
+console.log("MAx:" + so.max_slippage_pct)
+
 
         const keyMap = new Map()
         keyMap.set('b', 'limit'.grey + ' BUY'.green)
@@ -115,8 +117,9 @@ module.exports = function container (get, set, clear) {
             z(15, (so.mode === 'paper' ? '      ' : (so.mode === 'live' && (so.manual === false || typeof so.manual === 'undefined')) ? '       ' + 'AUTO'.black.bgRed + '    ' : '       ' + 'MANUAL'.black.bgGreen + '  '), ' '),
             z(13, so.period_length, ' '),
             z(29, (so.order_type === 'maker' ? so.order_type.toUpperCase().green : so.order_type.toUpperCase().red), ' '),
-            z(31, (so.mode === 'paper' ? 'avg. '.grey + so.avg_slippage_pct + '%' : 'max '.grey + so.max_slippage_pct + '%'), ' '),
-            z(20, (so.order_type === 'maker' ? so.order_type + ' ' + s.exchange.makerFee : so.order_type + ' ' + s.exchange.takerFee), ' ')
+//            z(31, (so.mode === 'paper' ? 'avg. '.grey + so.avg_slippage_pct + '%' : 'max '.grey + so.max_slippage_pct + '%'), ' '),
+            z(45, ('avg. '.grey + so.avg_slippage_pct + '%' + ' max. '.grey + so.max_slippage_pct + '%'), ' '),
+            z(15, (so.order_type === 'maker' ? so.order_type + ' ' + s.exchange.makerFee : so.order_type + ' ' + s.exchange.takerFee), ' ')
           ].join('') + '\n')
           process.stdout.write('')
           process.stdout.write([
